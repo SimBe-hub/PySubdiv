@@ -655,7 +655,7 @@ class Mesh(object):
         face_normals : (n,3)
             face normals for n (number of faces) faces the mesh
         """
-        if ['PyVistaPolyData'] in self.data:
+        if 'PyVistaPolyData' in self.data:
             pass
         else:
             self.model()

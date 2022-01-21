@@ -5,13 +5,14 @@ from pysubdiv.backend import optimization
 from pysubdiv.backend import automatization
 from scipy import optimize
 import pyswarms as ps
-from pysubdiv.main import main
-import pyvista as pv
+
+# Variational approach for fitting subdivision surfaces after Wu et. al. [http://dx.doi.org/10.1007/s41095-017-0088-2]
+
 
 class mesh_optimizer(object):
 
     def __init__(self, mesh, original_mesh, meshes_to_fit=None, use_dynamic_faces=False, iterations_subdivision=1,
-                 variable_edges='automatic', variable_vertices='automatic', use_bounds_p=False, a_z=1, lambda_e=1):
+                 variable_edges='automatic', variable_vertices='automatic', use_bounds_p=False, a_z=25, lambda_e=1):
         self.control_cage = mesh
         self.original_mesh = original_mesh
         self._use_dynamic_faces = use_dynamic_faces
@@ -207,7 +208,8 @@ class mesh_optimizer(object):
             self.variable_vertices_idx = self.variable_vertices
         return self.p
 
-    def optimize(self, number_iteration=5, epsilon_0=1e-5, iterations_swarm=500, nr_particles=10, c1=0.5, c2=0.3, w=0.9):
+    def optimize(self, number_iteration=5, epsilon_0=1e-5, iterations_swarm=500, nr_particles=10, c1=0.5, c2=0.3,
+                 w=0.9):
 
         epsilon = np.inf
         iteration = 0
