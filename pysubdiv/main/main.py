@@ -655,8 +655,14 @@ class Mesh(object):
         face_normals : (n,3)
             face normals for n (number of faces) faces the mesh
         """
+        if ['PyVistaPolyData'] in self.data:
+            pass
+        else:
+            self.model()
 
-        self.face_normals = calculation.face_normal(self.vertices[self.faces])
+        self.data['PyVistaPolyData'] = self.data['PyVistaPolyData'].compute_normals(cell_normals=True,
+                                                                                    point_normals=False)
+        self.face_normals = self.data['PyVistaPolyData']['Normals']
         self.data['face_normals'] = self.face_normals
         return self.face_normals
 
@@ -673,20 +679,11 @@ class Mesh(object):
             vertex_normals : (n,3)
                 vertex normals for n (number of vertices) vertices the mesh
         """
-        if 'face_normals' in self.data:
+        if 'PyVistaPolyData' in self.data:
             pass
         else:
-            self.define_face_normals()
-        if 'vertex_faces_matrix' in self.data:
-            pass
-        else:
-            self.vertices_faces_incidence()
-        vertex_normals = []
-        incidence_list = data_structure.matrix_to_list(self.data['vertex_faces_matrix'])
-        for vertex in incidence_list:
-            vertex_normal = sum(self.face_normals[vertex])
-            vertex_normal /= np.linalg.norm(vertex_normal)
-            vertex_normals.append(vertex_normal)
+            self.model()
+        vertex_normals = self.data['PyVistaPolyData'].point_normals
         self.vertex_normals = vertex_normals
         self.data['vertex_normals'] = self.vertex_normals
         return self.vertex_normals
@@ -824,7 +821,11 @@ class Mesh(object):
             PyVista object
         """
 
-        model = visualize.create_model(self.data['faces'], self.data['vertices'])
+        if 'PyVistaPolyData' in self.data:
+            model = self.data['PyVistaPolyData']
+        else:
+            model = visualize.create_model(self.data['faces'], self.data['vertices'])
+            self.data['PyVistaPolyData'] = model
         return model
 
     def visualize_mesh(self):
@@ -840,11 +841,12 @@ class Mesh(object):
         pyvista.PolyData
             pyvista object
         """
-        if 'face_normals' in self.data:
+        if 'face_normals' in self.data and 'vertex_normals' in self.data:
             pass
         else:
             self.define_face_normals()
             self.define_face_centroids()
+            self.define_vertex_normals()
 
         model = visualize.print_model(self)
         return model

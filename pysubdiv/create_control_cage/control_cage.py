@@ -119,7 +119,6 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
 
     p_cloud_complete['label'] = [i for i in range(p_cloud_complete.n_points)]
     p_cloud_complete['used_points'] = [0 for i in range(p_cloud_complete.n_points)]
-    #p_cloud = pv.PolyData(vertices_cloud_2).clean()
     n_points_p_cloud = p_cloud.n_points
     arr_for_filling = np.ones((p_cloud_complete.n_points - p_cloud.n_points, 3)) * 1000
     p_cloud.points = np.vstack((p_cloud.points, arr_for_filling))

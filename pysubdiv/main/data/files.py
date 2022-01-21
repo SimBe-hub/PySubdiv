@@ -18,7 +18,12 @@ def read(filename):
     PySubdiv mesh
     """
 
+    if filename.endswith('.obj'):
+        pass
+    else:
+        filename += ".obj"
     file = pv.read(filename)  # import file
+
     mesh_type = utils.check_mesh_type(file.faces)  # check if all faces are quadrilateral
     try:
         file_merged = file.merge(file).extract_geometry()
@@ -47,6 +52,10 @@ def save(mesh, filename):
     filename: (str)
         The string path for the file to save
     """
+    if filename.endswith('.obj'):
+        pass
+    else:
+        filename += ".obj"
     file = mesh.model()  # create PyVista PolyData object from the PySubdiv mesh
     pv.save_meshio(filename, file)  # save the PyVista PolyData
 
@@ -67,7 +76,6 @@ def save_data_dict(dictionary, filename):
     else:
         with open(f"{filename}.pkl", 'wb') as file:
             pickle.dump(dictionary, file)
-
 
 
 def load_dict(filename):

@@ -11,7 +11,7 @@ def create_model(faces, vertices):
 
     Parameters
     ----------
-    faces: (n, 4) int
+    faces: (n,3) or (n, 4) int
           Indexes of vertices making up the faces
     vertices: (n, 3) float
           Points in space
@@ -41,6 +41,7 @@ def print_model(pysubdiv_mesh):
         pyvista object
     """
     model = create_model(pysubdiv_mesh.faces, pysubdiv_mesh.vertices)
+    model['label'] = np.array([i for i in range(model.n_points)])
     p = pv.Plotter()
     p.add_mesh(model, color='green', use_transparency=False, show_edges=True)
     p.set_background("royalblue", top="aliceblue")
@@ -49,22 +50,6 @@ def print_model(pysubdiv_mesh):
     p.show_grid()
     p.show_bounds(all_edges=True)
     factor = p.length * 0.05
-
-    #average_edge_length = pysubdiv_mesh.average_edge_length
-    #if average_edge_length <= 1:
-    #    factor = 0.2
-    #else:
-    #    factor = 1
-
-    def recalculate_normals(check):
-        if check:
-            pysubdiv_mesh.recalculate_face_normals()
-            if 'face_normals' in p.renderer.actors:
-                show_normals(True)
-            if 'vertex_normals' in p.renderer.actors:
-                show_vertex_normals(True)
-        else:
-            recalculate_normals(True)
 
     def show_normals(check):
         if check:
@@ -90,13 +75,19 @@ def print_model(pysubdiv_mesh):
         else:
             p.remove_actor('vertex_normals')
 
+    def show_vertex_index(check):
+        if check:
+            p.add_point_labels(model, "label", name="vertex_index")
+        else:
+            p.remove_actor("vertex_index-points")
+            p.remove_actor("vertex_index-labels")
+
     p.add_checkbox_button_widget(show_vertex_normals, position=(10, 260), color_on='lightblue', size=35)
     p.add_text('show vertex normals', position=(60, 263), font_size=14, color='black')
     p.add_checkbox_button_widget(show_normals,  position=(10, 220), color_on='lightblue', size=35)
     p.add_text('show face normals', position=(60, 223), font_size=14, color='black')
-    p.add_checkbox_button_widget(recalculate_normals, position=(10, 180), color_on='green', color_off='green',
-                                 size=35)
-    p.add_text('recalculate normals', position=(60, 183), font_size=14, color='black',
+    p.add_checkbox_button_widget(show_vertex_index, position=(10, 180), color_on='green', size=35)
+    p.add_text('show vertex index', position=(60, 183), font_size=14, color='black',
                name='text_recalculate_normals')
 
     p.show()
