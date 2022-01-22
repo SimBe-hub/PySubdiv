@@ -265,7 +265,6 @@ class mesh_optimizer(object):
             mp = subdivided_mesh.data['vertices']
 
             self.lambda_z += self.a_z * (self.z - (self.v - mp))
-            self.initialize_v()
             epsilon = np.linalg.norm((self.p - p_0), ord=2)
 
             print(f"Results for iteration {iteration + 1} of {number_iteration}: ")
