@@ -196,13 +196,18 @@ def sharp_creases_from_boundaries(mesh, original_mesh, surface_to_fit):
     vertex_edge_incidence = []
     faces_edges_incidence = []
     creases = []
+    if "vertices_adjacency_list" in mesh.data:
+        pass
+    else:
+        mesh.vertices_connected_to_list()
+
     for mesh_part in original_mesh:
         vertex_edge_incidence.append(mesh_part.vertices_edges_incidence_to_list())
         faces_edges_incidence.append(mesh_part.faces_edges_incidence_to_list(invert=True))
 
     for edge in mesh.edges:  # loop over edges of the mesh
         boundary_vertex = []
-        for vertex_idx in edge:  # loop over vertices of the mesh
+        for vertex_idx in edge:  # loop over vertices of the edge
             edge_boolean_mask = []  # list to store boundary edges of the original mesh
             temp_mesh = main.Mesh(vertices=[mesh.vertices[vertex_idx]])
             temp_mesh.data['dynamic_vertices'] = mesh.data['dynamic_vertices'][vertex_idx]
@@ -212,10 +217,13 @@ def sharp_creases_from_boundaries(mesh, original_mesh, surface_to_fit):
                 boundary_vertex.append(False)
             else:
                 verts_edge_con = vertex_edge_incidence[mesh_id[0]][vert_id[0]]
-
                 for edge_index in verts_edge_con:
                     if len(faces_edges_incidence[mesh_id[0]][edge_index]) > 1:
-                        edge_boolean_mask.append(False)
+                        connected_vertices = mesh.data['vertices_adjacency_list'][vertex_idx]
+                        if any(mesh.data['dynamic_vertices'][connected_vertices] == 's'):
+                            edge_boolean_mask.append(True)
+                        else:
+                            edge_boolean_mask.append(False)
                     else:
                         edge_boolean_mask.append(True)
                 if any(edge_boolean_mask):
@@ -226,5 +234,4 @@ def sharp_creases_from_boundaries(mesh, original_mesh, surface_to_fit):
             creases.append(1)
         else:
             creases.append(0)
-
     return np.array(creases)
