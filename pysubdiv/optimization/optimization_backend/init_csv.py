@@ -191,6 +191,7 @@ def sharp_creases_from_dynamic_faces(mesh):
 
     return np.array(crease_values)
 
+
 def sharp_creases_from_boundaries(mesh, original_mesh, surface_to_fit):
     vertex_edge_incidence = []
     faces_edges_incidence = []
@@ -227,4 +228,3 @@ def sharp_creases_from_boundaries(mesh, original_mesh, surface_to_fit):
             creases.append(0)
 
     return np.array(creases)
-

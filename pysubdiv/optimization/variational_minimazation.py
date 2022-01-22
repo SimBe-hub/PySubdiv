@@ -154,7 +154,6 @@ class mesh_optimizer(object):
                 for edge_index in variable_edges_from_csv:
                     if edge_index in variable_edges_from_dynamic_faces:
                         variable_edges.append(edge_index)
-                print(variable_edges)
                 self.variable_edges = np.array(variable_edges)
 
         else:
@@ -215,7 +214,7 @@ class mesh_optimizer(object):
         iteration = 0
         if len(self.variable_edges) == 0:
             print('It seems that all crease sharpness values of the edges are constrained, only the control cage can be'
-                  'optimized')
+                  ' optimized')
         else:
             init_crease = self._control_cage.creases[self.variable_edges]
         while epsilon > epsilon_0 and iteration < number_iteration:
@@ -223,7 +222,7 @@ class mesh_optimizer(object):
             result_p = optimize.minimize(objective_functions.objective_p, self.p, method='SLSQP',
                                          args=(self._control_cage, self.v, self.z, self.lambda_z, self.a_z,
                                                self.variable_vertices_idx, self.iterations_subdivision),
-                                         bounds=self.bounds_p, options={'disp': True})
+                                         bounds=self.bounds_p)
 
             self.p = result_p.x.reshape(-1, 3)
             self._control_cage.vertices[self.variable_vertices_idx] = self.p
@@ -269,11 +268,12 @@ class mesh_optimizer(object):
             self.initialize_v()
             epsilon = np.linalg.norm((self.p - p_0), ord=2)
 
+            print(f"Results for iteration {iteration + 1} of {number_iteration}: ")
             print(f"total deviation of control points: {epsilon}")
             print(f"total deviation of the meshes: "
                   f"{np.linalg.norm((self.v - mp), ord=2)}")
             print(f"mean deviation of the meshes: {np.mean(self.v - mp)}")
-            print(f"maximal deviation of the meshes: {(self.v - mp)}")
+            print(f"maximal deviation of the meshes: {np.max((self.v - mp))}")
             iteration += 1
             if len(self.variable_edges) == 0:
                 pass
