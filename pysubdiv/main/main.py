@@ -556,6 +556,7 @@ class Mesh(object):
                 subdivided_mesh = Mesh()
                 subdivided_mesh.data = subdiv_surf.data
 
+        subdivided_mesh.ctr_points = None
         subdivided_mesh.set_crease()
         subdivided_mesh.edges_unique()
         subdivided_mesh.calculate_edge_length()
@@ -586,6 +587,7 @@ class Mesh(object):
         subdiv_surf.data['vertices'] = np.array(subdiv_surf.data['vertices'], dtype=np.float64)
         subdivided_mesh = Mesh()
         subdivided_mesh.data = subdiv_surf.data
+        subdivided_mesh.ctr_points = None
         subdivided_mesh.edges_unique()
         subdivided_mesh.set_crease(np.zeros(len(subdivided_mesh.edges)))
         subdivided_mesh.calculate_edge_length()

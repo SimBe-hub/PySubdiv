@@ -29,8 +29,6 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
     p_cloud_complete = pv.PolyData()
     p_cloud = pv.PolyData()
 
-
-
     # check if one mesh or list of meshes are passed and create Pyvista models
     if isinstance(mesh, list):
         points_for_labels = []
@@ -117,8 +115,8 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
     for i in range(len(original_model)):
         original_model_points.append(original_model[i].points)
 
-    p_cloud_complete['label'] = [i for i in range(p_cloud_complete.n_points)]
-    p_cloud_complete['used_points'] = [0 for i in range(p_cloud_complete.n_points)]
+    p_cloud_complete['label'] = np.array([i for i in range(p_cloud_complete.n_points)])
+    p_cloud_complete['used_points'] = np.array([0 for i in range(p_cloud_complete.n_points)])
     n_points_p_cloud = p_cloud.n_points
     arr_for_filling = np.ones((p_cloud_complete.n_points - p_cloud.n_points, 3)) * 1000
     p_cloud.points = np.vstack((p_cloud.points, arr_for_filling))
@@ -126,8 +124,8 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
     added_points = np.zeros(p_cloud.n_points)
     added_points[:n_points_p_cloud] = 1
 
-    p_cloud['label'] = [i for i in range(p_cloud.n_points)]
-    p_cloud['used_points'] = [0 for i in range(p_cloud.n_points)]
+    p_cloud['label'] = np.array([i for i in range(p_cloud.n_points)])
+    p_cloud['used_points'] = np.array([0 for i in range(p_cloud.n_points)])
     p_cloud['added_points'] = added_points
 
     def change_point_colour(point_cloud, idx_vertices):
@@ -168,6 +166,8 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
 
     def activate_vertex_picking(check):
         if not check:
+            p.remove_actor('disableButton')
+            p.add_text('enable vertices', position=(50, 10), font_size=10, color='black', name='enableButton')
             p.remove_actor(labels)
             p.remove_actor(points)
             points.pop()
@@ -176,6 +176,8 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
             p.add_point_labels(label_meshes, "label", point_size=20, font_size=36, tolerance=0.01,
                                show_points=True, name='label_mesh')
         else:
+            p.remove_actor('enableButton')
+            p.add_text('disable vertices', position=(50, 10), font_size=10, color='black', name='disableButton')
 
             p.remove_actor('label_mesh-points')
             p.remove_actor('label_mesh-labels')
@@ -188,19 +190,32 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
                        'Press P under the mouse courser to pick additional points, for example inside the surfaces',
                        position='upper_left', name='textbox', color='black')
 
-            p.add_checkbox_button_widget(pop_latest_face, position=(950, 10))
+            p.add_checkbox_button_widget(pop_latest_face, position=(800, 10), color_on='red', color_off='red', size=35)
+            p.add_text('Undo last face', position=(840, 10), font_size=10, color='black')
+
             points.append(p.add_mesh(p_cloud, point_size=20, scalars='used_points',
                                      cmap=['white', 'black'], show_scalar_bar=False, pickable=False))
             labels.append(p.add_point_labels(p_cloud, "label", point_size=20, font_size=36, tolerance=0.01,
                                              show_points=False))
 
-            p.add_checkbox_button_widget(select_vertices, position=(500, 10))
-            p.add_checkbox_button_widget(show_boundary_idx, position=(750, 10))
+            p.add_checkbox_button_widget(select_vertices, position=(300, 10), size=35, color_on='green',
+                                         color_off='green')
+            p.add_text('set vertices', position=(345, 10), font_size=10, color='black')
+            p.add_checkbox_button_widget(show_boundary_idx, position=(480, 10), size=35, color_on="purple")
+            p.add_text('enable boundary vertices', position=(525, 10), font_size=10, color='black', name='boundary')
 
-    def show_boundary_idx(check_3):
-        if not check_3:
-            pass
+    def show_boundary_idx(check):
+        if 'enableButton' in p.renderer.actors:
+            return
+        if not check:
+            p.remove_actor(labels)
+            p.remove_actor(points)
+            points.pop()
+            labels.pop()
+            p.add_text('enable boundary vertices', position=(525, 10), font_size=10, color='black', name='boundary')
+            activate_vertex_picking(True)
         else:
+
             p.remove_actor(labels)
             p.remove_actor(points)
             points.pop()
@@ -209,29 +224,30 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
                                      cmap=['white', 'black'], show_scalar_bar=False, pickable=False))
             labels.append(p.add_point_labels(p_cloud_complete, "label", point_size=20, font_size=36, tolerance=0.01,
                                              show_points=False))
+            p.add_text('disable boundary vertices', position=(525, 10), font_size=10, color='black', name='boundary')
 
-    def pop_latest_face(check_1):
-        if not check_1:
-            pass
+    def pop_latest_face(check):
+        if check:
+            if len(control_cage_faces) == 0:
+                print('no faces defined for control cage')
+            else:
+                print('saved faces: ', control_cage_faces)
+                print('deleted face: ', control_cage_faces[-1])
+                added_triangles.discard(tuple(sorted(control_cage_faces.pop())))
+                for i in range(3):
+                    p.remove_actor(line[-1])
+                    line.pop()
+                p.remove_actor(faces[-1])
+                faces.pop()
+                dynamic_face.pop()
+                vertices_fit.pop()
+                selected_points.clear()
+                print('saved faces: ', control_cage_faces)
         else:
+            pop_latest_face(True)
 
-            print('saved faces: ', control_cage_faces)
-            print('deleted face: ', control_cage_faces[-1])
-            added_triangles.discard(tuple(sorted(control_cage_faces.pop())))
-            for i in range(3):
-                p.remove_actor(line[-1])
-                line.pop()
-            p.remove_actor(faces[-1])
-            faces.pop()
-            dynamic_face.pop()
-            vertices_fit.pop()
-            selected_points.clear()
-            print('saved faces: ', control_cage_faces)
-
-    def select_vertices(check_2):
-        if not check_2:
-            pass
-        else:
+    def select_vertices(check):
+        if check:
             print('choose three control vertices to form a triangular face')
             while True:
                 input_0 = input('vertex one: ') or False
@@ -300,9 +316,9 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
                                name='visualisation', pickable=False)
 
                     while True:
-                        conf_mesh = input(f'mesh_{mesh_id} selected for fitting. '
-                                          f'For conformation please press Enter, or input different mesh index. '
-                                          f'To set triangle as static write "static" or "s", '
+                        conf_mesh = input(f'mesh_{mesh_id} selected for fitting. \n'
+                                          f'For conformation please press Enter, or input different mesh index.\n'
+                                          f'To set triangle as static write "static" or "s",\n'
                                           f'to cancel write "cancel" or "c": ') or 'y'
                         if conf_mesh == 'y':
                             dynamic_face.append(np.array(str(mesh_id)))
@@ -373,6 +389,8 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
                 control_cage_faces.append(np.array(selected_points_sorted))
                 print('saved faces: ', control_cage_faces)
                 selected_points.clear()
+        else:
+            select_vertices(True)
 
     def make_mesh_invisible(check):
         if check:
@@ -402,25 +420,22 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
         else:
             make_mesh_visible(True)
 
-
-
-    model_nr = 0
-    for model in original_model:
+    for model_nr, model in enumerate(original_model):
         name = 'mesh_' + str(model_nr)
         p.add_mesh(model, color=color, use_transparency=False, style=render_style, show_edges=True, name=name)
-        model_nr += 1
 
     p.enable_point_picking(add_point_from_picking, show_message=False)
 
     p.add_checkbox_button_widget(make_mesh_invisible, position=(10, 130), color_on='yellow',
-                                 color_off='yellow')
+                                 color_off='yellow', size=35)
     p.add_text('make mesh \n invisible', position=(10, 85), font_size=10, color='black')
     p.add_checkbox_button_widget(make_mesh_visible, position=(10, 230), color_on='orange',
-                                 color_off='orange')
+                                 color_off='orange', size=35)
 
     p.add_text('make mesh \n visible', position=(10, 185), font_size=10, color='black')
 
-    p.add_checkbox_button_widget(activate_vertex_picking, position=(10, 10))
+    p.add_checkbox_button_widget(activate_vertex_picking, position=(10, 10), size=35)
+
     p.isometric_view_interactive()
     text = p.add_text('Press button to select control vertices', position='lower_edge', name='textbox')
     p.set_background('royalblue', top='aliceblue')
@@ -633,7 +648,7 @@ def define_volumes(mesh):
                                 if isinstance(rest_of_faces, np.int64):
                                     next_face = rest_of_faces
                                 else:
-                                    next_face = rest_of_faces[np.random.randint(len(rest_of_faces))] # 1
+                                    next_face = rest_of_faces[np.random.randint(len(rest_of_faces))]  # 1
                                     temp_list = []
                                     for i in rest_of_faces:
                                         if i != next_face and i not in visited_faces:
@@ -667,9 +682,9 @@ def define_volumes(mesh):
     def clear_selection(check):
         if check:
             for selection in selected_cells:
-                p.remove_actor('tris_selection_'+str(selection))
-                #p.add_mesh(triangles[selection], color='green', use_transparency=False, show_edges=True,
-                           #name="tris_" + str(selection))
+                p.remove_actor('tris_selection_' + str(selection))
+                # p.add_mesh(triangles[selection], color='green', use_transparency=False, show_edges=True,
+                # name="tris_" + str(selection))
             selected_cells.clear()
         else:
             clear_selection(True)
@@ -708,7 +723,8 @@ def define_volumes(mesh):
                 print(volume_index_used)
                 print(volumes)
                 volume_idx = volume_index_used.pop()  # pop last volume number of the list and store it
-                face_idx, volumes[volume_idx] = volumes[volume_idx][-1], volumes[volume_idx][:-1]  # delete last added face
+                face_idx, volumes[volume_idx] = volumes[volume_idx][-1], volumes[volume_idx][
+                                                                         :-1]  # delete last added face
                 p.add_mesh(triangles[face_idx], use_transparency=False, show_edges=True, name="tris_" + str(face_idx),
                            color='green')
                 print('face ', face_idx, 'deleted from volume ', volume_idx)
@@ -723,9 +739,10 @@ def define_volumes(mesh):
             print_volumes(True)
 
     def delete_face(face_idx):
-            invisible_triangles.append(face_idx)
-            p.add_mesh(triangles[face_idx], color=triangles_colors[face_idx], use_transparency=True, opacity=0.8, show_edges=True,
-                       pickable=False, name="tris_" + str(face_idx))
+        invisible_triangles.append(face_idx)
+        p.add_mesh(triangles[face_idx], color=triangles_colors[face_idx], use_transparency=True, opacity=0.8,
+                   show_edges=True,
+                   pickable=False, name="tris_" + str(face_idx))
 
     def activate_volumes(check):
         if check:
@@ -741,8 +758,9 @@ def define_volumes(mesh):
                             volume_index = int(volume_index)
                             break
                     except ValueError:
-                        print(f'The input {volume_index} cannot be interpreted as an integer, please try again or enter '
-                              f'"cancel" to cancel')
+                        print(
+                            f'The input {volume_index} cannot be interpreted as an integer, please try again or enter '
+                            f'"cancel" to cancel')
                 for cell in selected_cells:
                     define_volume(cell, volume_index)
         else:
@@ -754,7 +772,6 @@ def define_volumes(mesh):
                 print('All triangles are visible')
             else:
                 for idx_invisible_tris in invisible_triangles:
-
                     p.add_mesh(triangles[idx_invisible_tris], color=triangles_colors[idx_invisible_tris],
                                use_transparency=False, show_edges=True, name="tris_" + str(idx_invisible_tris))
                 invisible_triangles.clear()
