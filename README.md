@@ -9,100 +9,45 @@ The PySubdiv library is a python-based open-source package that can apply non-ma
 # Quick Start
 
 ```python
-import main
-import files
+from pysubdiv.main import main
+from pysubdiv.main.data import files
 
-# PySubdiv mesh objects can be created from existing faces and vertex data:
+# Create a simple Mesh by passing vertices and faces
+# Create empty object or pass vertices and faces directly
+mesh = main.Mesh()
 
-mesh = main.Mesh(
-    vertices=[[-10, +30, -10], [-10, +30, 10], [20, +30, 10], [20, +30, -10], [-10, +50, -10], [-10, +50, 10],
-              [20, +50, 10], [20, +50, -10], [-30, 80, -10], [-30, 80, 10], [-30, 60, 10], [-30, 60, -10],
-              [-50, 50, -10], [-50, 50, 10], [-50, 30, 10], [-50, 30, -10]],
+# vertices do have the shape (n,3), we can pass a list or numpy array
+# where n is the number of vertices
+# each vertex is defined by its x,y and z coordinate in space
 
-    faces=[[0, 4, 7, 3], [1, 2, 6, 5], [3, 7, 6, 2], [0, 3, 2, 1], [4, 5, 6, 7], [11, 0, 1, 10], [1, 5, 9, 10],
-           [8, 9, 5, 4], [11, 8, 4, 0], [15, 11, 10, 14], [10, 9, 13, 14], [12, 13, 9, 8], [15, 12, 8, 11],
-           [14, 15, 12, 13]])
+vertices = [[-3., 3., -7.], [1., 2., 1.], [1., 3., -7.], [-3., -1., 1.], [1., -1., 1.], [-8., -1., -2.],
+            [-12., -1., -8.], [-8., -1., -10.], [1., -1., -7.], [-3., -1., -7.], [-8., 2., -2.], [-12., 3., -8.],
+            [-12., 2., 0.], [-3., 2., 1.], [-12., -1., 0.], [-8., 3., -10.]]
+# set the vertices property
+mesh.vertices = vertices
 
-# the mesh objects can be easily visualized:
+# Faces are defined by the indices of the vertices and have the shape (n,3) for triangular meshes.
+# n is the number if faces. Each face is defined by three vertices
 
+
+faces = [[0, 1, 2], [1, 3, 4], [5, 6, 7], [8, 3, 9], [8, 1, 4], [0, 8, 9],
+         [10, 11, 12], [0, 10, 13], [10, 14, 5], [7, 11, 15], [6, 12, 11],
+         [9, 5, 7], [13, 5, 3], [9, 15, 0], [0, 13, 1], [1, 13, 3], [5, 14, 6],
+         [8, 4, 3], [8, 2, 1], [0, 2, 8], [10, 15, 11], [0, 15, 10], [10, 12, 14],
+         [7, 6, 11], [6, 14, 12], [9, 3, 5], [13, 10, 5], [9, 7, 15]]
+# set the faces property
+mesh.faces = faces
+# visualize the mesh
 mesh.visualize_mesh()
 
-print(mesh.faces.shape)
-print(mesh.faces)
-
-# we can use the subdivision algorithms after Catmull-Clark to subdivide our mesh. A new PySubdiv mesh object will be
-# returned, so better save it.
-
-subdivided_mesh = mesh.subdivide()
-
-# and visualize it:
-
-subdivided_mesh.visualize_mesh()
-
-# the number of iterations can simply be passed to the previous method:
-
-subdivided_mesh = mesh.subdivide(iteration=2)
-
-subdivided_mesh.visualize_mesh()
-
-# we can create (geological-) structure to our mesh by setting individual crease value to the edges of our model
-# first we can put the edges out:
-
-print(mesh.edges_unique())
-
-# if we already know the crease values of our edges we can pass these values to our mesh
-
-mesh.set_crease([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [2, 4, 5, 6, 8, 9, 13, 15, 21, 22, 23, 24, 25, 27])
-
-# or we can simply pass a list of crease values. The crease array is than "filled" from top to bottom.
-
-creases = [0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1]
-
-mesh.set_crease(creases)
-
-subdivided_mesh = mesh.subdivide(iteration=2)
-subdivided_mesh.visualize_mesh()
-
-# By changing the crease values of particular edges we can create geological structures such as channels.
-# There is also a third way of setting the creases interactively with the help of a PyVista widget:
-
-mesh.set_crease_interactive()
-
-subdivided_mesh = mesh.subdivide(iteration=2)
-subdivided_mesh.visualize_mesh()
-
-# We can also subdivide our mesh in an interactive PyVista widget. There we can change the control cage of our mesh and
-# refine our mesh by changing the crease values. Here is also a new PySubdiv mesh object returned!
-
-subdivided_mesh = mesh.visualize_mesh_interactive(iteration=2)
-
-# We can also load existing meshes and load them as PySubdiv mesh objects.
-# Different file format should work, at the moment .obj files are testes.
-# Loaded meshes should have quadrilateral faces only.
-
-mesh_2 = files.read('Fold.obj')
-
-# Let's have a look and print the unique edges of the mesh:
-
-print(mesh_2.edges_unique())
-mesh_2.visualize_mesh()
-
-# set the crease of the edges
-
-mesh_2.set_crease([1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0])
-
-# and do the subdivision
-
-mesh_2_subdivided = mesh_2.subdivide(iteration=3)
-mesh_2_subdivided.visualize_mesh()
-
-# Setting the crease values of the edges, we created a folded structure with a syncline and anticline.
-# When looking at the crease array, we can see that most of edges' crease is set to one and only a small fraction where
-# we want a smooth topology, the crease should be lowered or set to zero.
-# The created meshes can be saved to vtk files, for example as .obj
-
-subdivided_mesh.save_mesh('channel.obj')
-mesh_2_subdivided.save_mesh('fold_subdivided.obj')
+# As it is quite tedious to set vertices and faces manually we simply can load and also save meshes from and to obj file
+# load mesh by passing the file path as string
+mesh_loaded_from_obj = files.read('Meshes/CoarseChannel.obj')
+# lets have a look:
+mesh_loaded_from_obj.visualize_mesh()
+# saving the mesh to obj file by passing a permitted file path, here I'm just overwriting.
+# The file ending will be added automatically if forgotten.
+mesh.save_mesh('Meshes/CoarseChannel')
 ```
 
 
