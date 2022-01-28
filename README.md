@@ -49,6 +49,8 @@ mesh_loaded_from_obj.visualize_mesh()
 # The file ending will be added automatically if forgotten.
 mesh.save_mesh('Meshes/CoarseChannel')
 ```
+# Installation
+
 
 
 # Developers
