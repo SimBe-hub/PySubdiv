@@ -102,3 +102,12 @@ mesh_2_subdivided.visualize_mesh()
 subdivided_mesh.save_mesh('channel.obj')
 mesh_2_subdivided.save_mesh('fold_subdivided.obj')
 ```
+
+
+# Developers
+
+Full stack developer : Simon Bernard (SimBe-hub)
+
+Project manager and backend developer : s.Mohammad Moulaeifard (MohammadCGRE)
+
+Project supervisor from RWTH Aachen university: Prof. Florian Wellmann
