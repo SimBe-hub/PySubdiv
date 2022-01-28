@@ -3,7 +3,7 @@
 Open-source python package for non-manifold subdivison surfaces algorithm
 
 # Overview
-The PySubdiv library is a python-based open-source package that can apply non-manifold subdivision surfaces algorithm (Loop) on triangluar meshes with considering unique semi-sharp creases value for each edge. The implementation of semi-sharp creases in the algorithm allows to model of different varieties of structures with sharp edges.
+The PySubdiv library is a python-based open-source package that can apply non-manifold subdivision surfaces algorithm (Loop) on triangluar meshes with considering unique semi-sharp creases value for each edge. The implementation of semi-sharp creases in the algorithm allows to model of different varieties of structures with sharp edges. Fitting of smooth subdivision surfaces to the input dense meshes for reconstruction is implemented in this python package.
 
 
 # Quick Start
