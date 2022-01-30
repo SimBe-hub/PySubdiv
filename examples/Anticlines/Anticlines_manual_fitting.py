@@ -1,4 +1,4 @@
-from pysubdiv.main.data import files
+from PySubdiv.data import files
 
 # manual fitting of a control cage to input meshes
 # first we load our control cage and the data from the previous example

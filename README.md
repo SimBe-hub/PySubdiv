@@ -1,13 +1,24 @@
-from PySubdiv import PySubdiv
-from PySubdiv.data import files
+
+# PySubdiv 
+Open-source python package for non-manifold subdivison surfaces algorithm
+
+# Overview
+The PySubdiv library is a python-based open-source package that can apply non-manifold subdivision surfaces algorithm (Loop) on triangluar meshes with considering unique semi-sharp creases value for each edge. The implementation of semi-sharp creases in the algorithm allows to model of different varieties of structures with sharp edges. Fitting of smooth subdivision surfaces to the input dense meshes for reconstruction is implemented in this python package.
+
+
+# Quick Start
+
+```python
+from pysubdiv.main import main
+from pysubdiv.main.data import files
 
 # Create a simple Mesh by passing vertices and faces
 # Create empty object or pass vertices and faces directly
-mesh = PySubdiv.Mesh()
+mesh = main.Mesh()
 
 # vertices do have the shape (n,3), we can pass a list or numpy array
 # where n is the number of vertices
-# each vertex is defined by its x,y and z coordinate in space
+# each vertex is defined by it's x,y and z coordinate in space
 
 vertices = [[-3., 3., -7.], [1., 2., 1.], [1., 3., -7.], [-3., -1., 1.], [1., -1., 1.], [-8., -1., -2.],
             [-12., -1., -8.], [-8., -1., -10.], [1., -1., -7.], [-3., -1., -7.], [-8., 2., -2.], [-12., 3., -8.],
@@ -34,7 +45,18 @@ mesh.visualize_mesh()
 mesh_loaded_from_obj = files.read('Meshes/CoarseChannel.obj')
 # lets have a look:
 mesh_loaded_from_obj.visualize_mesh()
-# Yes indeed it is the same mesh
 # saving the mesh to obj file by passing a permitted file path, here I'm just overwriting.
 # The file ending will be added automatically if forgotten.
 mesh.save_mesh('Meshes/CoarseChannel')
+```
+# Installation
+
+
+
+# Developers
+
+Full stack developer : Simon Bernard (SimBe-hub)
+
+Project manager and backend developer : s.Mohammad Moulaeifard (MohammadCGRE)
+
+Project supervisor from RWTH Aachen university: Prof. Florian Wellmann

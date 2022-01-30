@@ -1,5 +1,5 @@
-from pysubdiv.main.data import files
-from pysubdiv.create_control_cage import control_cage
+from PySubdiv.data import files
+from PySubdiv.create_control_cage import control_cage
 
 # First step: import all the necessary meshes from .obj file
 original_meshes = [files.read('meshes/gemp_mesh_0_scaled.obj'),
@@ -26,5 +26,5 @@ control_cage = control_cage.create_control_cage(original_meshes, find_vertices=T
 # when the control cage is created we want to save the mesh and the dictionary of the mesh property, so we can restore
 # it later
 control_cage.visualize_mesh()
-#control_cage.save_mesh("controlCage/FaultDomainControlCage.obj")
-#control_cage.save_data("controlCage/FaultDomainControlCageData")
+control_cage.save_mesh("controlCage/FaultDomainControlCage.obj")
+control_cage.save_data("controlCage/FaultDomainControlCageData")

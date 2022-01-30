@@ -1,5 +1,5 @@
-from pysubdiv.main.data import files
-from pysubdiv.create_control_cage import control_cage
+from PySubdiv.data import files
+from PySubdiv.create_control_cage import control_cage
 
 # load the original mesh exported from gempy and visualize
 anticlineOriginal = files.read("meshes/anticline_joined.obj")

@@ -1,4 +1,4 @@
-from pysubdiv.main.data import files
+from PySubdiv.data import files
 import pyvista as pv
 
 # load the meshes from obj

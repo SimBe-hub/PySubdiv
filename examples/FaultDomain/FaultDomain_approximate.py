@@ -1,5 +1,5 @@
-from pysubdiv.main.data import files
-from pysubdiv.optimization import variational_minimazation
+from PySubdiv.data import files
+from PySubdiv.optimization import variational_minimazation
 
 # automatic fitting of the control cage to an input mesh with a variational minimization approach after Wu et. al. 2017
 # [http://dx.doi.org/10.1007/s41095-017-0088-2]
@@ -8,8 +8,7 @@ from pysubdiv.optimization import variational_minimazation
 faultDomainControlCage = files.read('controlCage/FaultDomainControlCage.obj')
 faultDomainControlCage.load_data('controlCage/FaultDomainControlCageData.pkl')
 # apply simple subdivision one time to refine the mesh for optimization
-faultDomainControlCage_simple_subdivision = faultDomainControlCage.simple_subdivision()
-
+faultDomainControlCage_simple_subdivision = faultDomainControlCage.simple_subdivision(1)
 # create list of input/original meshes
 # Caution: Order inside the list should be the same as during the creation of the control cage
 original_meshes = [files.read('meshes/gemp_mesh_0_scaled.obj'),

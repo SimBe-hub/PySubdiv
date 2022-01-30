@@ -1,4 +1,4 @@
-from pysubdiv.main.data import files
+from PySubdiv.data import files
 
 control_cage = files.read("../controlCage/FaultDomainControlCageOptimized.obj")
 control_cage.load_data("../controlCage/FaultDomainControlCageOptimizedData")

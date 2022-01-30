@@ -1,4 +1,4 @@
-from pysubdiv.main.data import files
+from PySubdiv.data import files
 
 # import the mesh of the coarse channel
 coarseChannel = files.read("Meshes/CoarseChannel.obj")
