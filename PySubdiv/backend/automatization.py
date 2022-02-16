@@ -5,6 +5,7 @@ from PySubdiv.backend import calculation
 import math
 
 
+
 def find_boundary_vertices(mesh, return_index=False, return_edge=False):
     """
     Find the coordinates of the vertices that are on the boundary in a 2D plane
@@ -29,11 +30,14 @@ def find_boundary_vertices(mesh, return_index=False, return_edge=False):
         List of vertex indices making up the boundary_edges
     """
 
-    if "faces_edges_matrix" in mesh.data:
+    if "edge_faces_dictionary" in mesh.data:
         pass
     else:
-        mesh.faces_edges_incidence()
-    index_boundary_edges = np.nonzero(np.sum(mesh.data['faces_edges_matrix'], axis=0) == 1)[0]
+        mesh.edges_faces_connected()
+    index_boundary_edges = []
+    for edge_idx in mesh.data["edge_faces_dictionary"]:
+        if len(mesh.data["edge_faces_dictionary"][edge_idx]) < 2:
+            index_boundary_edges.append(edge_idx)
     boundary_edges = mesh.data['unique_edges'][index_boundary_edges]
     index_boundary_vertices = np.unique(boundary_edges)
     boundary_vertices = mesh.data['unique_edges'][index_boundary_vertices]
@@ -83,8 +87,10 @@ def find_corner_vertices(mesh, index_boundary_vertices=None, return_index=False)
 
     if index_boundary_vertices is None:
         index_boundary_vertices = np.unique(find_boundary_vertices(mesh, return_index=True)[0])
+    if "vertices_connected_dictionary" not in mesh.data:
+        mesh.vertices_connected_dictionary()
 
-    connected_vertices_matrix = mesh.vertices_connected()  # build vertex adjacency matrix
+    connected_vertices_matrix = mesh.data["vertices_connected_dictionary"]  # build vertex adjacency matrix
     num_boundary_vertices = len(index_boundary_vertices)  # number of vertices on the boundary of the mesh
     # create array to store connected vertices
     connected_vert_boundary_arr = np.ones((num_boundary_vertices, 4), dtype=int)
@@ -316,3 +322,5 @@ def find_intersection_points(mesh_1, mesh_2, tol=None):
     pl.add_mesh(model_2, style='wireframe', color='red')
     pl.show()
     return intersection_points[0]
+
+

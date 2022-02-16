@@ -204,7 +204,6 @@ class Structure(object):
                 -1, 2)
             # finding vertices opposite to the new edge point
             opposite_verts_zero_crease = np.zeros((len(connected_tris_zero_crease_masked), 2), dtype=int)
-
             for i in range(len(connected_tris_zero_crease_masked)):
                 connected_face_1 = set(self.data['faces'][connected_tris_zero_crease_masked[i][0]])
                 connected_face_2 = set(self.data['faces'][connected_tris_zero_crease_masked[i][1]])

@@ -122,7 +122,7 @@ class Mesh(object):
             self.data['mesh_type'] = utils.mesh_type(values)
             self.data['faces'] = values
 
-    def add_vertex(self, vertex):
+    def add_vertex_old(self, vertex):
         """
         Add a vertex to the end of the vertex array
 
@@ -139,6 +139,44 @@ class Mesh(object):
             print('vertex', vertex, 'added at index: ', len(self.data['vertices']) - 1)
         else:
             raise ValueError("Vertices are not in the shape (n,3)")
+
+    def add_vertex(self, face_index, position=None):
+        """
+        Add a vertex at the passed position or centroid of the passed faces (index). Deletes the passed face and create three new
+        faces to fill the hole in the mesh.
+
+        Parameters
+        --------------
+        face_index : int
+            index of face in self.faces
+        position: [x, y, z] float or None
+            when position is new vertex will be at that position otherwise at the centroid of the face
+
+        """
+        # check if passed face index is in the range of the meshes' faces
+        if face_index > len(self.faces) - 1:
+            print(f"face index {face_index} out of Range for mesh with {len(self.faces)} faces")
+        else:
+            if position is None:
+                position = self.face_centroids[face_index] # get centroid position of face
+            self.vertices = np.append(self.vertices, [position], axis=0) # add centroid to the vertices
+            new_faces = []  # list to store the three new faces
+            # create three new faces with the reference from the new vertex and the old vertices building the face
+            for counter, idx_vertex in enumerate(self.faces[face_index]):
+                new_face = [idx_vertex, len(self.vertices) - 1]
+                if counter < 2:
+                    new_face.append(self.faces[face_index][counter + 1])
+                else:
+                    new_face.append(self.faces[face_index][0])
+                new_faces.append(new_face)
+            # appending the new faces to self.faces
+            self.faces = np.append(self.faces, new_faces, axis=0)
+            # deleting the old face
+            self.faces = np.delete(self.faces, face_index, axis=0)
+
+        self.define_face_centroids()
+        self.derive_edges()
+        self.edges_unique()
 
     @property
     def ctr_points(self):
@@ -837,7 +875,6 @@ class Mesh(object):
             self.define_face_normals()
             self.define_face_centroids()
             self.define_vertex_normals()
-
         model = visualize.print_model(self)
         return model
 
@@ -862,23 +899,6 @@ class Mesh(object):
         subdivided_mesh = visualize.visualize_subdivision(self, iteration, additional_meshes)
         return subdivided_mesh
 
-    def pick_geodesic_path(self):
-        """
-        Opens an interactive pyvista model of the mesh, where vertices can be picked and the shortest path are
-        calculated with Dijkstras's algorithm.
-        Returns a list of arrays with the indices of the vertices on the path
-        Parameters
-        ----------
-        self: mesh
-
-        Returns
-        ---------
-        nested list:
-            arrays of the vertices indices of the path
-
-        """
-        self.data['geodesic_path'] = visualize.geodesic_path(self)
-        return self.data['geodesic_path']
 
     def save_mesh(self, filename):
         """

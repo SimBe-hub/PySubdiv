@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 from PySubdiv.backend import calculation
 from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 import math
 
 
@@ -164,7 +165,9 @@ def face_edges_incident(unique_edges, sorted_edges, faces, mesh_type):
     row = calculation.faces_to_edges(faces, mesh_type, return_index=True)[1]
     data = np.ones(len(col))
     coo = coo_matrix((data, (row, col)), shape=(len(faces), len(unique_edges))).toarray()
+
     return coo
+
 
 
 def edge_faces_dict(unique_edges, sorted_edges):

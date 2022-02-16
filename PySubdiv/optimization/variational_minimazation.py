@@ -4,6 +4,7 @@ from PySubdiv.optimization.optimization_backend import objective_functions
 from PySubdiv.backend import optimization
 from PySubdiv.backend import automatization
 from scipy import optimize
+from scipy import linalg
 import pyswarms as ps
 
 # Variational approach for fitting subdivision surfaces after Wu et. al. [http://dx.doi.org/10.1007/s41095-017-0088-2]
@@ -212,20 +213,20 @@ class mesh_optimizer(object):
 
         epsilon = np.inf
         iteration = 0
+        A = self.control_cage.subdivide().data['subdivision_weight_matrix'].toarray()
         if len(self.variable_edges) == 0:
             print('It seems that all crease sharpness values of the edges are constrained, only the control cage can be'
                   ' optimized')
         else:
             init_crease = self._control_cage.creases[self.variable_edges]
         while epsilon > epsilon_0 and iteration < number_iteration:
-            p_0 = self.p
-            result_p = optimize.minimize(objective_functions.objective_p, self.p, method='SLSQP',
-                                         args=(self._control_cage, self.v, self.z, self.lambda_z, self.a_z,
-                                               self.variable_vertices_idx, self.iterations_subdivision),
-                                         bounds=self.bounds_p)
-
-            self.p = result_p.x.reshape(-1, 3)
-            self._control_cage.vertices[self.variable_vertices_idx] = self.p
+            p_0 = self.control_cage.vertices
+            # result_p = optimize.minimize(objective_functions.objective_p, self.p, method='SLSQP',
+            #                              args=(self._control_cage, self.v, self.z, self.lambda_z, self.a_z,
+            #                                    self.variable_vertices_idx, self.iterations_subdivision),
+            #                              bounds=self.bounds_p)
+            self.p = linalg.inv(A.T @ A) @ (A.T @ self.v - A.T @ self.z - (A.T @ self.lambda_z)/self.a_z)
+            #self.p = result_p.x.reshape(-1, 3)
 
             if len(self.variable_edges) == 0:
                 pass
@@ -261,7 +262,7 @@ class mesh_optimizer(object):
             self.z = result_z
 
             subdivided_mesh = self._control_cage.subdivide(self.iterations_subdivision)
-
+            A = subdivided_mesh.data['subdivision_weight_matrix'].toarray()
             mp = subdivided_mesh.data['vertices']
 
             self.lambda_z += self.a_z * (self.z - (self.v - mp))
