@@ -1,5 +1,3 @@
-import time
-
 from PySubdiv.data import files
 from PySubdiv.optimization import variational_minimazation
 from PySubdiv.backend import optimization
@@ -14,42 +12,11 @@ import numpy as np
 anticlineControlCage = files.read("ControlCage/anticlineControlCage.obj")
 anticlineControlCage.load_data("ControlCage/anticlineControlCageData")
 
-start = time.time()
-anticlineControlCage_s = anticlineControlCage.simple_subdivision(1)
-test = anticlineControlCage_s.subdivide(1)
-A = test.data['subdivision_weight_matrix'].toarray()
-print(time.time() - start)
 
 # create list of input/original meshes
 # Caution: Order inside the list should be the same as during the creation of the control cage
 original_meshes = [files.read('meshes/anticline_1.obj'), files.read('meshes/anticline_2.obj')]
-
-v = optimization.sdf_with_meshes(original_meshes,
-                                      anticlineControlCage_s.subdivide(1),
-                                      return_vertices=True)
-anticlineControlCage_s.visualize_mesh_interactive(2)
-vertices = np.zeros(anticlineControlCage_s.vertices.shape)
-print(A.shape)
-print(v)
-z = np.zeros(v.shape)
-az = 0.1
-lambda_z = np.zeros(v.shape)
-
-#vertices = (linalg.inv(A.T @ A) / az) @ (A.T @ v * az - A.T @ z * az)
-vertices = linalg.inv(A.T @ A) @ (A.T @ v - A.T @ z - A.T/4 @ lambda_z)
-print(vertices)
-#pseudo = linalg.pinv(A)
-#test = pseudo @ v
-#print(test)
-anticlineControlCage_s.vertices = vertices
-anticlineControlCage_s.ctr = None
-anticlineControlCage_s.recalculate_normals()
-anticlineControlCage_s.visualize_mesh()
-anticlineControlCage_s.subdivide(2).visualize_mesh()
-anticlineControlCage_s.visualize_mesh_interactive(2, original_meshes)
-
-
-dsdd
+#
 # initialize the optimizer:
 # first argument is the control cage to be optimized. Position of vertices as well as crease sharpness values are
 # going to be optimized. Second argument is the list of original meshes.
@@ -88,13 +55,14 @@ anticlineControlCageOptimized.visualize_mesh_interactive(2, original_meshes)
 anticlineControlCage = files.read("ControlCage/anticlineControlCage.obj")
 anticlineControlCage.load_data("ControlCage/anticlineControlCageData")
 anticlineControlCage = anticlineControlCage.simple_subdivision(1)
+anticlineControlCage.visualize_mesh()
 
 optimizer = variational_minimazation.mesh_optimizer(anticlineControlCage, original_meshes,
                                                     meshes_to_fit=None, use_dynamic_faces=True,
                                                     iterations_subdivision=1, variable_edges='automatic',
                                                     variable_vertices='automatic', use_bounds_p=False,
                                                     a_z=25, lambda_e=1)
-optimizer.optimize(number_iteration=5, epsilon_0=1e-5, iterations_swarm=500, nr_particles=15, c1=0.5, c2=0.3,
+optimizer.optimize(number_iteration=1, epsilon_0=1e-5, iterations_swarm=500, nr_particles=15, c1=0.5, c2=0.3,
                    w=0.9)
 anticlineControlCageOptimized = optimizer.control_cage
 anticlineControlCageOptimized.visualize_mesh_interactive(2, original_meshes)
