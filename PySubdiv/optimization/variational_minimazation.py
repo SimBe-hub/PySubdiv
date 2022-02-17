@@ -26,8 +26,11 @@ class mesh_optimizer(object):
                 self.variable_vertices = variable_vertices
             else:
                 self.variable_vertices = range(len(mesh.vertices))
-        else:
+
+        elif isinstance(self.variable_vertices, list):
             self.variable_vertices = variable_vertices
+        else:
+            self.variable_vertices = range(len(mesh.vertices))
 
         self.variable_vertices_idx = None
         self.initial_csv = self.initialize_crease_values()
@@ -159,7 +162,12 @@ class mesh_optimizer(object):
 
         else:
             self.initial_csv = init_csv.sharp_creases_from_angles(self._control_cage)
-            self.variable_edges = np.array(range(len(self.initial_csv)))
+
+            if self.variable_edges == 'automatic':
+                self.variable_edges = np.array(range(len(self.initial_csv)))
+            else:
+                self.variable_edges = np.array(range(len(self._control_cage.edges)))
+
         self._control_cage.set_crease(self.initial_csv)
         return self.initial_csv
 
