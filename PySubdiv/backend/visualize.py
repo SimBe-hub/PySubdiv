@@ -89,7 +89,6 @@ def print_model(pysubdiv_mesh):
     p.add_checkbox_button_widget(show_vertex_index, position=(10, 180), color_on='green', size=35)
     p.add_text('show vertex index', position=(60, 183), font_size=14, color='black',
                name='text_recalculate_normals')
-
     p.show()
     return model
 
@@ -102,6 +101,7 @@ def visualize_subdivision(mesh, iteration, additional_meshes=None):
     selection = []  # list to hold vertices forming edge
     edges_with_crease = {}  # dict to hold vertices forming edge where a crease is set
     selection_edge_idx = []  # list to hold edge idx
+    point_for_adding_vertex = [] # list to store point for adding
     p.add_mesh(model_mesh, color='green', opacity=0.5, use_transparency=True, show_edges=True, name='control_cage')
     p.add_mesh(model_subdivided_mesh, color='green', use_transparency=False, show_edges=False, pickable=False,
                name='subdivided')
@@ -167,6 +167,56 @@ def visualize_subdivision(mesh, iteration, additional_meshes=None):
                 p.remove_actor([f"point_{point_ids[0]}", f"point_{point_ids[1]}"])
                 point_ids.clear()
 
+    def set_crease_values():
+        if len(selection_edge_idx) == 0:
+            print('No edges selected')
+        else:
+            print('Set crease sharpness value via console or leave empty to leave current values for the selection')
+            # here is the prompt
+            csv = float(input('Please enter crease sharpness value: ') or mesh.creases[selection_edge_idx])
+            if csv > 1:
+                csv = 1.0
+            elif csv < 0:
+                csv = 0
+            mesh.set_crease(np.ones(len(selection_edge_idx)) * csv, np.array(selection_edge_idx).flatten())
+            print(f"Crease sharpness value(s) set to: {csv}")
+            p.add_mesh(mesh.subdivide(iteration).model(), color='green', use_transparency=False, show_edges=False,
+                       pickable=False, name='subdivided')
+            for edge_idx in selection_edge_idx:
+                p.remove_actor(f"selection{edge_idx}")
+                p.add_lines(model_mesh.points[mesh.edges[edge_idx][0]], color='yellow',
+                            width=(5 * csv) + 0.5, name=f"line{edge_idx[0]}")
+
+            for i in range(len(selection)):
+                for vert in selection[i]:
+                    edges_with_crease.setdefault(vert, []).append(selection_edge_idx[i][0])
+            selection.clear()
+            selection_edge_idx.clear()
+
+    def position_for_new_vertex(click_position):
+        click_position = np.array(click_position)  # convert to np.array
+        direction_from_camera = click_position - p.camera_position[0]  # get direction from the camera to point
+        direction_from_camera /= np.linalg.norm(direction_from_camera)  # normalize the vector
+        start = click_position - 1000 * direction_from_camera  # start end for raycast
+        end = click_position + 1000 * direction_from_camera
+        point, ix = mesh.model().ray_trace(start, end, first_point=True)
+        if len(point) >0:
+            point_for_adding_vertex.append(point)
+            print(ix)
+            #print(point)
+
+
+            print(mesh.faces)
+            mesh.add_vertex(ix[0], point)
+            print(mesh.faces)
+            mesh_model = mesh.model()
+            p.add_mesh(mesh_model, color='green', opacity=0.5, use_transparency=True, show_edges=True,
+                       name='control_cage')
+
+            w = p.add_mesh(pv.Sphere(radius_start[0], center=point), color='red')
+
+        print(click_position)
+
     if additional_meshes is None:
         offset_for_button = 0.2
         p.add_text(
@@ -206,36 +256,13 @@ def visualize_subdivision(mesh, iteration, additional_meshes=None):
     p.add_checkbox_button_widget(enable_sphere_widget, color_on='red',
                                  position=((0.3 + offset_for_button) * p.window_size[0], 10))
 
-    def set_crease_values():
-        if len(selection_edge_idx) == 0:
-            print('No edges selected')
-        else:
-            print('Set crease sharpness value via console or leave empty to leave current values for the selection')
-            # here is the prompt
-            csv = float(input('Please enter crease sharpness value: ') or mesh.creases[selection_edge_idx])
-            if csv > 1:
-                csv = 1.0
-            elif csv < 0:
-                csv = 0
-            mesh.set_crease(np.ones(len(selection_edge_idx)) * csv, np.array(selection_edge_idx).flatten())
-            print(f"Crease sharpness value(s) set to: {csv}")
-            p.add_mesh(mesh.subdivide(iteration).model(), color='green', use_transparency=False, show_edges=False,
-                       pickable=False, name='subdivided')
-            for edge_idx in selection_edge_idx:
-                p.remove_actor(f"selection{edge_idx}")
-                p.add_lines(model_mesh.points[mesh.edges[edge_idx][0]], color='yellow',
-                            width=(5 * csv) + 0.5, name=f"line{edge_idx[0]}")
-
-            for i in range(len(selection)):
-                for vert in selection[i]:
-                    edges_with_crease.setdefault(vert, []).append(selection_edge_idx[i][0])
-            selection.clear()
-            selection_edge_idx.clear()
-
     p.add_key_event('c', set_crease_values)
     p.set_background("royalblue", top="aliceblue")
     p.isometric_view_interactive()
-    p.show_axes()
+    p.add_camera_orientation_widget()
+
+    p.track_click_position(position_for_new_vertex, side='right')
+
     p.show_bounds(mesh=model_mesh, grid='front', location='outer', all_edges=True)
     p.show()
     subdivided_mesh = mesh.subdivide(iteration)

@@ -169,7 +169,6 @@ def face_edges_incident(unique_edges, sorted_edges, faces, mesh_type):
     return coo
 
 
-
 def edge_faces_dict(unique_edges, sorted_edges):
     """
     Returns incidence edges and faces. The dictionary key is the edge index and the values are the face indices.

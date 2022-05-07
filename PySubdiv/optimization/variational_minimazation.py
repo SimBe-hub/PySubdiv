@@ -7,6 +7,7 @@ from scipy import optimize
 from scipy import linalg
 import pyswarms as ps
 
+
 # Variational approach for fitting subdivision surfaces after Wu et. al. [http://dx.doi.org/10.1007/s41095-017-0088-2]
 
 
@@ -27,7 +28,7 @@ class mesh_optimizer(object):
             else:
                 self.variable_vertices = range(len(mesh.vertices))
 
-        elif isinstance(self.variable_vertices, list):
+        elif isinstance(variable_vertices, list):
             self.variable_vertices = variable_vertices
         else:
             self.variable_vertices = range(len(mesh.vertices))
@@ -42,6 +43,7 @@ class mesh_optimizer(object):
         self.lambda_e = lambda_e
         self.z = np.zeros(self.v.shape)
         self.lambda_z = np.zeros(self.v.shape)
+        self.subdivided_mesh = None
         """
         This class is used to initialize and perform the optimization routine on the control cage and the
         original mesh. First some attributes have to be initialized to 
@@ -138,9 +140,11 @@ class mesh_optimizer(object):
         if self._use_dynamic_faces:
             csv_boundaries = init_csv.sharp_creases_from_boundaries(self._control_cage, self.original_mesh,
                                                                     self._meshes_to_fit)
+            print(csv_boundaries)
 
             csv_angles = init_csv.sharp_creases_from_angles(self._control_cage)
             self.initial_csv = csv_boundaries + csv_angles
+            # self.initial_csv = csv_boundaries
 
             if self.variable_edges == 'automatic':
                 variable_edges = []
@@ -158,7 +162,54 @@ class mesh_optimizer(object):
                 for edge_index in variable_edges_from_csv:
                     if edge_index in variable_edges_from_dynamic_faces:
                         variable_edges.append(edge_index)
-                self.variable_edges = np.array(variable_edges)
+                # self.variable_edges = np.array(variable_edges)
+                print(len(variable_edges))
+                print(variable_edges)
+                print("------")
+
+                if 'vertex_edges_dictionary' in self._control_cage.data:
+                    pass
+                else:
+                    self._control_cage.vertex_edges_dictionary()
+
+                if 'boundary_vertices' in self._control_cage.data:
+                    idx_to_delete = []
+                    boundary_vertices_idx = np.nonzero(self._control_cage.data['boundary_vertices'] == 1)[0]
+                    for vert_idx in boundary_vertices_idx:
+                        connected_edges = self._control_cage.data['vertex_edges_dictionary'][vert_idx]
+                        for connected_edge in connected_edges:
+                            if connected_edge in variable_edges:
+                                idx_to_delete.append(connected_edge)
+                    idx_to_delete = np.unique(idx_to_delete)
+                    self.variable_edges = np.array(variable_edges)
+                    indices = np.argwhere(np.isin(self.variable_edges, idx_to_delete))
+                    self.variable_edges = np.delete(self.variable_edges, indices)
+                    print(len(variable_edges))
+                else:
+                    self.variable_edges = np.array(variable_edges)
+
+                # else:
+                #     self._control_cage.vertex_edges_dictionary()
+                # crease_edges_idx = np.nonzero(self.initial_csv !=0)[0]
+                # idx_to_delete = []
+                # for edge_index in crease_edges_idx:
+                #     edge = self._control_cage.edges[edge_index]
+                #     for vertex_idx in edge:
+                #         connected_edges = self._control_cage.data['vertex_edges_dictionary'][vertex_idx]
+                #         print(self._control_cage.data['vertex_edges_dictionary'][vertex_idx])
+                #         for connected_edge in connected_edges:
+                #             if connected_edge in variable_edges:
+                #                 idx_to_delete.append(connected_edge)
+                # idx_to_delete = np.unique(idx_to_delete)
+                # self.variable_edges = np.array(variable_edges)
+                # indices = np.argwhere(np.isin(self.variable_edges, idx_to_delete))
+                # self.variable_edges = np.delete(self.variable_edges, indices)
+                # print(len(variable_edges))
+
+
+
+            else:
+                self.variable_edges = np.array(range(len(self._control_cage.edges)))
 
         else:
             self.initial_csv = init_csv.sharp_creases_from_angles(self._control_cage)
@@ -192,8 +243,8 @@ class mesh_optimizer(object):
             vertex_edge_incidence = []
             faces_edges_incidence = []
             for mesh in self.original_mesh:
-                vertex_edge_incidence.append(mesh.vertices_edges_incidence_to_list())
-                faces_edges_incidence.append(mesh.faces_edges_incidence_to_list(invert=True))
+                vertex_edge_incidence.append(mesh.vertex_edges_dictionary())
+                faces_edges_incidence.append(mesh.edges_faces_connected())
 
             for i in range(len(self._control_cage.vertices)):
                 if self.control_cage.data['dynamic_vertices'][i] == 's':
@@ -217,28 +268,43 @@ class mesh_optimizer(object):
         return self.p
 
     def optimize(self, number_iteration=5, epsilon_0=1e-5, iterations_swarm=500, nr_particles=10, c1=0.5, c2=0.3,
-                 w=0.9):
+                 w=0.9, skip_csv=False):
 
         epsilon = np.inf
         iteration = 0
-        A = self.control_cage.subdivide().data['subdivision_weight_matrix'].toarray()
+        if self.iterations_subdivision > 1:
+            A_multilevel = []
+            for i in range(self.iterations_subdivision):
+                A_multilevel.append(self.control_cage.subdivide(i + 1).data['subdivision_weight_matrix'].toarray())
+            print(len(A_multilevel))
+            for i, matrix in enumerate(reversed(A_multilevel)):
+                print(A_multilevel[i].shape)
+                if i == 0:
+                    A = matrix
+                else:
+                    A = A @ matrix
+            print(A.shape)
+        else:
+            A = self.control_cage.subdivide().data['subdivision_weight_matrix'].toarray()
         if len(self.variable_edges) == 0:
             print('It seems that all crease sharpness values of the edges are constrained, only the control cage can be'
                   ' optimized')
         else:
             init_crease = self._control_cage.creases[self.variable_edges]
         while epsilon > epsilon_0 and iteration < number_iteration:
-            p_0 = self.control_cage.vertices
-            # result_p = optimize.minimize(objective_functions.objective_p, self.p, method='SLSQP',
-            #                              args=(self._control_cage, self.v, self.z, self.lambda_z, self.a_z,
-            #                                    self.variable_vertices_idx, self.iterations_subdivision),
-            #                              bounds=self.bounds_p)
-            self.p = linalg.inv(A.T @ A) @ (A.T @ self.v - A.T @ self.z - (A.T @ self.lambda_z)/self.a_z)
-            #self.p = result_p.x.reshape(-1, 3)
 
-            if len(self.variable_edges) == 0:
-                pass
+            p_0 = self.control_cage.vertices
+
+            if len(self.variable_edges) == 0 or skip_csv is True:
+                new_p = linalg.lstsq(A, self.v)[0]
+                self.p = new_p
+                self._control_cage.vertices = new_p
+
             else:
+                new_p = linalg.inv(A.T @ A) @ (A.T @ self.v - A.T @ self.z - (A.T @ self.lambda_z) / self.a_z)
+                self.p = new_p
+                self._control_cage.vertices = new_p
+
                 x_max = np.ones(len(self.variable_edges))
                 x_min = np.zeros(len(self.variable_edges))
 
@@ -249,14 +315,14 @@ class mesh_optimizer(object):
                 initial_pos = np.random.rand(nr_particles, len(init_crease)).round(1)
                 initial_pos[0] = init_crease.flatten()
                 initial_pos[1] = np.zeros(len(init_crease))
-                initial_pos[2] = np.ones(len(init_crease))
+                # initial_pos[2] = np.ones(len(init_crease))
                 crease_idx = np.nonzero(init_crease == 1)[0]
                 initial_pos[3:, crease_idx] = 1
-
+                print(init_crease)
                 optimizer = ps.single.GlobalBestPSO(n_particles=nr_particles, dimensions=len(self.variable_edges),
-                                                    options=options, bounds=bounds, init_pos=initial_pos)
+                                                    options=options, bounds=bounds)
 
-                cost, result_h = optimizer.optimize(objective_functions.objective_h, iterations_swarm, n_processes=2,
+                cost, result_h = optimizer.optimize(objective_functions.objective_h, iterations_swarm, n_processes=None,
                                                     mesh=self._control_cage, v=self.v,
                                                     z=self.z, lambda_z=self.lambda_z, a_z=self.a_z,
                                                     variable_edges=self.variable_edges,
@@ -264,18 +330,29 @@ class mesh_optimizer(object):
 
                 minimized_creases = result_h.T
                 self._control_cage.set_crease(minimized_creases, self.variable_edges)
-
             result_z = objective_functions.objective_z(self._control_cage, self.v, self.lambda_z, self.a_z,
                                                        self.lambda_e, self.iterations_subdivision)
             self.z = result_z
 
-            subdivided_mesh = self._control_cage.subdivide(self.iterations_subdivision)
-            A = subdivided_mesh.data['subdivision_weight_matrix'].toarray()
-            mp = subdivided_mesh.data['vertices']
+            self.subdivided_mesh = self._control_cage.subdivide(self.iterations_subdivision)
 
+            if self.iterations_subdivision > 1:
+                A_multilevel = []
+                for i in range(self.iterations_subdivision):
+                    A_multilevel.append(self.control_cage.subdivide(i + 1).data['subdivision_weight_matrix'].toarray())
+                for i, matrix in enumerate(reversed(A_multilevel)):
+                    if i == 0:
+                        A = matrix
+                    else:
+                        A = A @ matrix
+            else:
+                A = self.control_cage.subdivide().data['subdivision_weight_matrix'].toarray()
+
+            mp = self.subdivided_mesh.vertices
             self.lambda_z += self.a_z * (self.z - (self.v - mp))
-            epsilon = np.linalg.norm((self.p - p_0), ord=2)
 
+            epsilon = np.linalg.norm((self.p - p_0), ord=2)
+            self.subdivided_mesh.data['deviation'] = self.v - mp
             print(f"Results for iteration {iteration + 1} of {number_iteration}: ")
             print(f"total deviation of control points: {epsilon}")
             print(f"total deviation of the meshes: "
@@ -283,9 +360,10 @@ class mesh_optimizer(object):
             print(f"mean deviation of the meshes: {np.mean(self.v - mp)}")
             print(f"maximal deviation of the meshes: {np.max((self.v - mp))}")
             iteration += 1
-            if len(self.variable_edges) == 0:
+            if len(self.variable_edges) == 0 or skip_csv is True:
                 pass
             else:
                 init_crease = self.control_cage.creases[self.variable_edges]
+
         print(f"Optimization finished after iteration {iteration} with a total error of "
               f"{np.linalg.norm((self.v - mp), ord=2)}")

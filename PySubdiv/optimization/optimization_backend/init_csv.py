@@ -9,7 +9,7 @@ def sharp_creases_from_angles(mesh):
     """
     Initialization of crease values. The initial sharpness is set based on coarse detection of sharp features.
     To detect whether an edge is a candidate for a crease edge, a threshold is used. The threshold is the angle between
-    the normals of two adjacent faces containing the edge. If the angle is  > 60° it is considered to be a crease. i.e
+    the normals of two adjacent faces containing the edge. If the angle is  90° it is considered to be a crease. i.e
     the crease value is set to 1 otherwise to 0. Non-manifold edges also get a crease value of 1.
 
     Parameters
@@ -57,18 +57,10 @@ def sharp_creases_from_angles(mesh):
     # calculate angle between normal vectors
     cos = np.zeros(len(normal_vector_first_face_unit))
     for i in range(len(cos)):
-        # p = pv.Plotter()
-        # p.add_mesh(pv.Arrow(calculation.centroid(mesh.data['vertices'][first_face][i]), normal_vector_first_face_unit[i], scale=1))
-        # p.add_mesh(pv.Arrow(calculation.centroid(mesh.data['vertices'][second_face][i]), normal_vector_second_face_unit[i], scale=1))
-        # p.add_mesh(mesh.model())
-        # p.show()
-
         cos[i] = abs((np.dot(normal_vector_first_face_unit[i], normal_vector_second_face_unit[i])))
-        # print(cos[i])
-
     crease_values = np.where((cos >= 0) & (cos < 0.1), 1, 0)
     for edge in non_manifold_edges:
-        crease_values = np.concatenate((crease_values[:edge], [1], crease_values[edge:]))
+        crease_values = np.concatenate((crease_values[:edge], [0], crease_values[edge:]))
     for edge in boundary_edges:
         crease_values = np.concatenate((crease_values[:edge], [1], crease_values[edge:]))
     return np.array(crease_values)
@@ -201,37 +193,97 @@ def sharp_creases_from_boundaries(mesh, original_mesh, surface_to_fit):
     else:
         mesh.vertices_connected_to_list()
 
-    for mesh_part in original_mesh:
-        vertex_edge_incidence.append(mesh_part.vertices_edges_incidence_to_list())
-        faces_edges_incidence.append(mesh_part.faces_edges_incidence_to_list(invert=True))
+    if "edge_faces_dictionary" in mesh.data:
+        pass
+    else:
+        mesh.edges_faces_connected()
 
-    for edge in mesh.edges:  # loop over edges of the mesh
-        boundary_vertex = []
-        for vertex_idx in edge:  # loop over vertices of the edge
-            edge_boolean_mask = []  # list to store boundary edges of the original mesh
-            temp_mesh = PySubdiv.Mesh(vertices=[mesh.vertices[vertex_idx]])
-            temp_mesh.data['dynamic_vertices'] = mesh.data['dynamic_vertices'][vertex_idx]
-            mesh_id, vert_id = optimization.sdf_with_meshes(
-                np.array(original_mesh)[surface_to_fit].tolist(), temp_mesh)[:2]
-            if mesh_id[0] == 's':
-                boundary_vertex.append(False)
-            else:
-                verts_edge_con = vertex_edge_incidence[mesh_id[0]][vert_id[0]]
-                for edge_index in verts_edge_con:
-                    if len(faces_edges_incidence[mesh_id[0]][edge_index]) > 1:
-                        connected_vertices = mesh.data['vertices_adjacency_list'][vertex_idx]
-                        if any(mesh.data['dynamic_vertices'][connected_vertices] == 's'):
-                            edge_boolean_mask.append(True)
-                        else:
-                            edge_boolean_mask.append(False)
-                    else:
-                        edge_boolean_mask.append(True)
-                if any(edge_boolean_mask):
-                    boundary_vertex.append(True)
+    if 'boundary_edges_data' in mesh.data:
+        boundary_edges_indices = np.nonzero(mesh.data['boundary_edges_data'] == 1)
+        creases = np.zeros(len(mesh.edges))
+        creases[boundary_edges_indices] = 1
+        print(creases)
+        return creases
+
+    elif 'boundary_vertices' in mesh.data:
+        if 'boudary_layer_vertices' in mesh.data:
+            index_counter = 0
+            for vrtx_idx_1, vrtx_idx_2 in mesh.edges:
+                edge_boolean_mask = []
+                if len(mesh.data['edge_faces_dictionary'][index_counter]) > 2:
+                    creases.append(0)
                 else:
-                    boundary_vertex.append(False)
-        if all(boundary_vertex):
-            creases.append(1)
+
+                    if mesh.data['boundary_vertices'][vrtx_idx_1] == 1 and \
+                            mesh.data['boundary_layer_vertices'][vrtx_idx_1] < 1:
+                        edge_boolean_mask.append(True)
+                    else:
+                        edge_boolean_mask.append(False)
+                    if mesh.data['boundary_vertices'][vrtx_idx_2] == 1 \
+                            and mesh.data['boundary_layer_vertices'][vrtx_idx_2] == -1:
+                        edge_boolean_mask.append(True)
+                    else:
+                        edge_boolean_mask.append(False)
+
+                    if all(edge_boolean_mask):
+                        creases.append(1)
+                    else:
+                        creases.append(0)
+                index_counter += 1
         else:
-            creases.append(0)
+            index_counter = 0
+            for vrtx_idx_1, vrtx_idx_2 in mesh.edges:
+                edge_boolean_mask = []
+                if len(mesh.data['edge_faces_dictionary'][index_counter]) > 2:
+                    creases.append(0)
+                else:
+                    if mesh.data['boundary_vertices'][vrtx_idx_1] == 1:
+                        edge_boolean_mask.append(True)
+                    else:
+                        edge_boolean_mask.append(False)
+                    if mesh.data['boundary_vertices'][vrtx_idx_2] == 1:
+                        edge_boolean_mask.append(True)
+                    else:
+                        edge_boolean_mask.append(False)
+
+                    if all(edge_boolean_mask):
+                        creases.append(1)
+                    else:
+                        creases.append(0)
+                index_counter += 1
+
+    else:
+        for mesh_part in original_mesh:
+            vertex_edge_incidence.append(mesh_part.vertex_edges_dictionary())
+            faces_edges_incidence.append(mesh_part.edges_faces_connected())
+
+        for edge in mesh.edges:  # loop over edges of the mesh
+            boundary_vertex = []
+            for vertex_idx in edge:  # loop over vertices of the edge
+                edge_boolean_mask = []  # list to store boundary edges of the original mesh
+                temp_mesh = PySubdiv.Mesh(vertices=[mesh.vertices[vertex_idx]])
+                temp_mesh.data['dynamic_vertices'] = mesh.data['dynamic_vertices'][vertex_idx]
+                mesh_id, vert_id = optimization.sdf_with_meshes(
+                    np.array(original_mesh)[surface_to_fit].tolist(), temp_mesh)[:2]
+                if mesh_id[0] == 's':
+                    boundary_vertex.append(False)
+                else:
+                    verts_edge_con = vertex_edge_incidence[mesh_id[0]][vert_id[0]]
+                    for edge_index in verts_edge_con:
+                        if len(faces_edges_incidence[mesh_id[0]][edge_index]) > 1:
+                            connected_vertices = mesh.data['vertices_adjacency_list'][vertex_idx]
+                            if any(mesh.data['dynamic_vertices'][connected_vertices] == 's'):
+                                edge_boolean_mask.append(True)
+                            else:
+                                edge_boolean_mask.append(False)
+                        else:
+                            edge_boolean_mask.append(True)
+                    if any(edge_boolean_mask):
+                        boundary_vertex.append(True)
+                    else:
+                        boundary_vertex.append(False)
+            if all(boundary_vertex):
+                creases.append(1)
+            else:
+                creases.append(0)
     return np.array(creases)

@@ -158,8 +158,8 @@ class Mesh(object):
             print(f"face index {face_index} out of Range for mesh with {len(self.faces)} faces")
         else:
             if position is None:
-                position = self.face_centroids[face_index] # get centroid position of face
-            self.vertices = np.append(self.vertices, [position], axis=0) # add centroid to the vertices
+                position = self.face_centroids[face_index]  # get centroid position of face
+            self.vertices = np.append(self.vertices, [position], axis=0)  # add centroid to the vertices
             new_faces = []  # list to store the three new faces
             # create three new faces with the reference from the new vertex and the old vertices building the face
             for counter, idx_vertex in enumerate(self.faces[face_index]):
@@ -746,7 +746,7 @@ class Mesh(object):
         """
         self.model()
         self.data['PyVistaPolyData'] = self.data['PyVistaPolyData'].compute_normals(cell_normals=True,
-                                                                        point_normals=False)
+                                                                                    point_normals=False)
         self.face_normals = self.data['PyVistaPolyData']['Normals']
         self.data['face_normals'] = self.face_normals
         return self.face_normals
@@ -898,7 +898,6 @@ class Mesh(object):
         """
         subdivided_mesh = visualize.visualize_subdivision(self, iteration, additional_meshes)
         return subdivided_mesh
-
 
     def save_mesh(self, filename):
         """

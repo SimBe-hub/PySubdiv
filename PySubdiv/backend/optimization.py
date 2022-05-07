@@ -101,6 +101,7 @@ def sdf_with_meshes(original_mesh, mesh_for_fitting, return_vertices=False):
         vertices = np.zeros(mesh_for_fitting.vertices.shape)
         for mesh in original_mesh:
             tree.append(build_tree(mesh))
+
         for i in range(len(mesh_for_fitting.vertices)):
             idx_mesh = mesh_for_fitting.data['dynamic_vertices'][i]
             if idx_mesh == 's':

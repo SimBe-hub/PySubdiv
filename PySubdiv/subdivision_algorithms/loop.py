@@ -53,6 +53,18 @@ class Structure(object):
             self._inherit_volumes = True
         else:
             self._inherit_volumes = False
+
+        if 'boundary_vertices' in mesh.data:
+            self.data['boundary_vertices'] = mesh.data['boundary_vertices']
+
+        if 'non_manifold_vertices' in mesh.data:
+            self.data['non_manifold_vertices'] = mesh.data['non_manifold_vertices']
+
+        if 'boundary_layer_vertices' in mesh.data:
+            self.data['boundary_layer_vertices'] = mesh.data['boundary_layer_vertices']
+        if 'boundary_edges_data' in mesh.data:
+            self.data['boundary_edges_data'] = mesh.data['boundary_edges_data']
+
         if 'subdiv_iterations' in mesh.data:
             self.data['subdiv_iterations'] = mesh.data['subdiv_iterations']
         else:
@@ -146,7 +158,6 @@ class Structure(object):
         edge_verts = np.zeros((len(self.data['unique_edges']), 3))
         old_vertex_count = len(self.data['vertices'])
 
-
         # seperate boundary odd edges and non manifold edges from edge vertices
 
         idx_boundary_odd_edges = []
@@ -182,12 +193,12 @@ class Structure(object):
         # creases for boundary odd vertices might  not work correctly
         if len(idx_boundary_odd_edges != 0):
             for idx in idx_boundary_odd_edges:
-                subdivison_weight_matrix[idx+old_vertex_count, self.data['unique_edges'][idx]] = 0.5
+                subdivison_weight_matrix[idx + old_vertex_count, self.data['unique_edges'][idx]] = 0.5
 
         # can be put together with boundary odd vertices to shorten the code
         if len(idx_non_manifold_edges != 0):
             for idx in idx_non_manifold_edges:
-                subdivison_weight_matrix[idx+old_vertex_count, self.data['unique_edges'][idx]] = 0.5
+                subdivison_weight_matrix[idx + old_vertex_count, self.data['unique_edges'][idx]] = 0.5
 
         if len(idx_zero_crease) > 0:
 
@@ -212,8 +223,8 @@ class Structure(object):
 
             # calculating the vertex position for the edge points with zero crease
             for counter, idx in enumerate(idx_zero_crease):
-                subdivison_weight_matrix[idx+old_vertex_count, self.data['unique_edges'][idx]] = 0.375
-                subdivison_weight_matrix[idx+old_vertex_count, opposite_verts_zero_crease[counter]] = 0.125
+                subdivison_weight_matrix[idx + old_vertex_count, self.data['unique_edges'][idx]] = 0.375
+                subdivison_weight_matrix[idx + old_vertex_count, opposite_verts_zero_crease[counter]] = 0.125
 
         if len(idx_crease) > 0:
             # array of the face indices repeated for every index in idx_crease
@@ -233,17 +244,19 @@ class Structure(object):
                 opposite_verts[i, 1] = list(connected_face_2 - connected_face_1)[0]
 
             edge_weights_smooth = (1 - self.data['creases'][idx_crease].reshape(-1, 1)) * \
-                                       np.array([0.375, 0.375, 0.125, 0.125]) # smooth edge weights
+                                  np.array([0.375, 0.375, 0.125, 0.125])  # smooth edge weights
             edge_weights_sharp = (self.data['creases'][idx_crease].reshape(-1, 1)) * \
-                                       np.array([0.5, 0.5, 0, 0]) # sharp edge weights
+                                 np.array([0.5, 0.5, 0, 0])  # sharp edge weights
             vertex_weight_combined = edge_weights_smooth + edge_weights_sharp
             for counter, idx in enumerate(idx_crease):
-                subdivison_weight_matrix[idx+old_vertex_count, self.data['unique_edges'][idx]] = vertex_weight_combined[counter][0]
-                subdivison_weight_matrix[idx+old_vertex_count, opposite_verts[counter]] = vertex_weight_combined[counter][2]
+                subdivison_weight_matrix[idx + old_vertex_count, self.data['unique_edges'][idx]] = \
+                    vertex_weight_combined[counter][0]
+                subdivison_weight_matrix[idx + old_vertex_count, opposite_verts[counter]] = \
+                    vertex_weight_combined[counter][2]
 
         if len(idx_infinite_crease) > 0:
             for idx in idx_infinite_crease:
-                subdivison_weight_matrix[idx+old_vertex_count, self.data['unique_edges'][idx]] = 0.5
+                subdivison_weight_matrix[idx + old_vertex_count, self.data['unique_edges'][idx]] = 0.5
 
         return edge_verts, idx_boundary_odd_edges, idx_non_manifold_edges, idx_non_manifold_verts, \
                idx_infinite_crease, idx_crease, subdivison_weight_matrix
@@ -264,7 +277,8 @@ class Structure(object):
         # Part 2: Generating edge points/ edge children
         # -----------------------------------------------------------
         edge_child_pos, idx_boundary_odd_edges, idx_non_manifold_edges, idx_non_manifold_verts, \
-        idx_infinite_crease_edges, idx_crease_edges, subdivision_weight_matrix = self.generate_edge_points(subdivision_weight_matrix)
+        idx_infinite_crease_edges, idx_crease_edges, subdivision_weight_matrix = self.generate_edge_points(
+            subdivision_weight_matrix)
         subdivision_weight_matrix = subdivision_weight_matrix
         if len(idx_boundary_odd_edges != 0):
             idx_boundary_verts = np.unique(self.data['unique_edges'][idx_boundary_odd_edges])
@@ -273,6 +287,12 @@ class Structure(object):
 
         edges_with_crease = np.concatenate((self.data['unique_edges'], self.data['creases']),
                                            axis=1)  # append sharpness values to array of unique_edges
+
+        # set crease value of non-manifold edges to zero as they don't influence the calculation
+        if len(idx_non_manifold_edges) > 0:
+            edges_with_crease[idx_non_manifold_edges, 2] = 0
+
+        edge_sharpness_idx = np.nonzero(edges_with_crease[:, 2])
 
         self.data['vertices'] = np.concatenate((self.data['vertices'], edge_child_pos), axis=0)
 
@@ -284,7 +304,6 @@ class Structure(object):
         sum_sharp_around_vertex = np.zeros(old_vertex_count)
         vertex_edges_connected = self.data['vertex_edges_dictionary']
 
-
         for i in range(old_vertex_count):
 
             connected_verts = self.data['vertices_connected_dictionary'][i]
@@ -293,9 +312,9 @@ class Structure(object):
                                                          keepdims=True)
 
             connected_faces = self.data['vertex_faces_dictionary'][i]
-            edge_sharpness_idx = edges_with_crease[connected_edge_mids][:, 2]
+            edges_sharpness_around_vertex = edges_with_crease[connected_edge_mids][:, 2]
 
-            edges_sharpness_around_vertex = edge_sharpness_idx
+
             number_creases_around_vertex = np.count_nonzero((edges_sharpness_around_vertex > 0) &
                                                             (edges_sharpness_around_vertex < 1))
 
@@ -304,20 +323,54 @@ class Structure(object):
             number_edges = len(connected_verts)
 
             if i in idx_non_manifold_verts:
-                if number_faces <= 3 or i in idx_boundary_verts:
+                connected_non_manifold_edges = connected_edge_mids[
+                    np.isin(connected_edge_mids, idx_non_manifold_edges)]
+                # if number_faces <= 3 or i in idx_boundary_verts:
+                # if only one non-manifold edge connected -> complex non-manifold vertex -> corner rule
+                if len(connected_non_manifold_edges) == 1:
                     subdivision_weight_matrix[i, i] = 1  # sparse matrix
                 else:
-                    connected_non_manifold_edges = connected_edge_mids[
-                        np.isin(connected_edge_mids, idx_non_manifold_edges)]
-                    if len(connected_non_manifold_edges) + sharp_edges_around_vertex >= 3:
+                    # if more than two non-manifold edge connected -> complex non-manifold vertex -> corner rule
+                    if len(connected_non_manifold_edges) > 2:
                         subdivision_weight_matrix[i, i] = 1  # sparse matrix
+                    # two non-manifold-vertices connected crease-rule
+                    # non-manifold vertices only influenced by adjacent non-manifold vertices
                     else:
-                        w1 = 0.75
+                        # find idx of the connected non-manifold vertices
                         connected_non_manifold_verts = np.unique(
                             self.data['unique_edges'][connected_non_manifold_edges])
-                        w3 = np.where(np.isin(connected_verts, connected_non_manifold_verts), 0.125, 0)
-                        subdivision_weight_matrix[i, i] = w1
-                        subdivision_weight_matrix[i, connected_verts] = w3
+                        if sum_sharp_around_vertex[i] == 0:
+                            # no csv assigned to adjacent edges (only manifold edges count) -> crease-rule
+                            # 0.75 on original vertex, 0.125 on the two connected non-manifold vertices
+                            w1 = 0.75
+                            w3 = np.where(np.isin(connected_verts, connected_non_manifold_verts), 0.125, 0)
+                            subdivision_weight_matrix[i, i] = w1
+                            subdivision_weight_matrix[i, connected_verts] = w3
+                        else:
+                            # csv assigned to adjacent edges (only manifold edges count)
+                            # -> corner rule vertex and crease rule on the two connected non-manifold vertices
+                            # fractional weight must be calculated
+
+                            # corner mask
+                            w1_corner = 1.0
+                            w3_corner = 0
+
+                            # crease mask
+                            w1_sharp = 0.75
+                            w3_sharp = np.where(np.isin(connected_verts, connected_non_manifold_verts), 0.125, 0)
+                            # fractional weight
+                            pWeight = vertex_masks.fractional_weight(self, connected_edge_mids)
+                            print(pWeight)
+                            cWeight = 1.0 - pWeight
+                            w1_combined, w3_combined = vertex_masks.combine_vertex_masks(w1_corner, w1_sharp, w3_corner,
+                                                                                         w3_sharp,
+                                                                                         pWeight, cWeight)
+                            print(w1_combined)
+                            print(w3_combined)
+
+                            subdivision_weight_matrix[i, i] = w1_combined
+                            subdivision_weight_matrix[i, connected_verts] = w3_combined
+
             elif i in idx_boundary_verts:
                 # parent vertices are boundary vertices
 
@@ -430,6 +483,14 @@ class Structure(object):
 
         # set dynamic vertices for fitting purposes with signed distance function
 
+        if 'boundary_layer_vertices' in self.data:
+            self.data['boundary_layer_vertices'] = \
+                property_inhertiage.pass_down_layer_boundary_vertices(edges_mid_direction_1,
+                                                                      self.data['boundary_layer_vertices'],
+                                                                      self.data['dynamic_vertices'],
+                                                                      self.data['edge_faces_dictionary'],
+                                                                      self.data['dynamic_faces'])
+
         if self.data['fitting_method'] is not None:
             dynamic_faces_vertices_edges = property_inhertiage.pass_down_dynamic_faces_vertices(
                 self.data['dynamic_faces'], self.data['dynamic_vertices'], self.data['unique_edges'],
@@ -443,6 +504,20 @@ class Structure(object):
         if self._inherit_volumes:
             volumes_inherited = property_inhertiage.pass_down_volumes(self.data['volumes'])
             self.data['volumes'] = volumes_inherited
+
+        if 'boundary_vertices' in self.data:
+            self.data['boundary_vertices'] = \
+                property_inhertiage.pass_down_boundary_vertices(edges_mid_direction_1,
+                                                                self.data['boundary_vertices'])
+
+        if 'non_manifold_vertices' in self.data:
+            self.data['non_manifold_vertices'] = \
+                property_inhertiage.pass_down_boundary_vertices(edges_mid_direction_1,
+                                                                self.data['non_manifold_vertices'])
+        if 'boundary_edges_data' in self.data:
+            self.data['boundary_edges_data'] = \
+                property_inhertiage.pass_down_boundary_edge_data(self.data['edges'], new_edges, edges_mid_direction_1,
+                                                                 self.data['boundary_edges_data'])
 
         self.data['faces'] = new_faces
         edges = calculation.faces_to_edges(self.data['faces'], self.data['mesh_type'])

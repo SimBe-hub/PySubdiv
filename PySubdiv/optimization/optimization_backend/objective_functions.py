@@ -95,9 +95,10 @@ def objective_h(h, mesh, v, z, lambda_z, a_z, variable_edges, iterations=1):
         for j in range(len(lambda_z)):
             dot_product.append(np.dot(lambda_z[j], (z - diff_v_mp)[j]))
         # calculate losses for each vertex pair p and v as distance to the vectors
-        losses = dot_product + a_z / 2 * np.linalg.norm(z - diff_v_mp, axis=1) ** 2
+        losses = dot_product + a_z / 2 * np.linalg.norm(z - diff_v_mp) ** 2
         # sum up the losses and return the loss which should be minimized for each member of the swarm
         loss.append(losses.sum())
+
     return np.array(loss)
 
 
