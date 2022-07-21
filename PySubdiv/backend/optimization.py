@@ -64,7 +64,7 @@ def query_tree(vertices, kd_tree_mesh, k=1):
     d : float
         distance to the nearest neighbour
     """
-    d, idx = kd_tree_mesh.query(vertices, k=k)
+    d, idx = kd_tree_mesh.query(vertices, k=k, p=2)
     return idx, d
 
 

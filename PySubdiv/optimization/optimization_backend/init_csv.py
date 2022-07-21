@@ -5,7 +5,7 @@ from PySubdiv import PySubdiv
 from PySubdiv.backend import optimization
 
 
-def sharp_creases_from_angles(mesh):
+def sharp_creases_from_angles(mesh, epsilon=90):
     """
     Initialization of crease values. The initial sharpness is set based on coarse detection of sharp features.
     To detect whether an edge is a candidate for a crease edge, a threshold is used. The threshold is the angle between
@@ -16,8 +16,8 @@ def sharp_creases_from_angles(mesh):
     --------------
     mesh : PySubdiv mesh object
         control cage on which we want to find the crease edges
-    dynamic_edges : boolean or list
-        indices of dynamic_edges
+    epsilon: float
+        Threshold angle
 
     Returns
     --------------
@@ -58,7 +58,10 @@ def sharp_creases_from_angles(mesh):
     cos = np.zeros(len(normal_vector_first_face_unit))
     for i in range(len(cos)):
         cos[i] = abs((np.dot(normal_vector_first_face_unit[i], normal_vector_second_face_unit[i])))
-    crease_values = np.where((cos >= 0) & (cos < 0.1), 1, 0)
+
+    threshold = epsilon * (np.pi / 180)
+    crease_values = np.where(np.arccos(cos) >= threshold, 1, 0)
+
     for edge in non_manifold_edges:
         crease_values = np.concatenate((crease_values[:edge], [0], crease_values[edge:]))
     for edge in boundary_edges:
@@ -202,7 +205,6 @@ def sharp_creases_from_boundaries(mesh, original_mesh, surface_to_fit):
         boundary_edges_indices = np.nonzero(mesh.data['boundary_edges_data'] == 1)
         creases = np.zeros(len(mesh.edges))
         creases[boundary_edges_indices] = 1
-        print(creases)
         return creases
 
     elif 'boundary_vertices' in mesh.data:

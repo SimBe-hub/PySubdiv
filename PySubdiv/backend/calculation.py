@@ -68,9 +68,9 @@ def call_subdiv_algorithm(mesh, level, interactive=False, simple_subdivision=Fal
         if mesh.data['mesh_type'] == 'quadrilateral':
             surf = Catmull_Clark.Structure(mesh)
         else:
-            surf = loop.Structure(mesh)
+            surf = loop.MeshRefiner(mesh)
         for i in range(level):
-            surf.main()
+            surf.refine()
         return surf
     else:
         mesh.data['interactive'] = False
@@ -79,14 +79,14 @@ def call_subdiv_algorithm(mesh, level, interactive=False, simple_subdivision=Fal
         else:
             if not simple_subdivision:
                 if for_optimization:
-                    surf = loop_optimization.Structure(mesh)
+                    surf = loop_optimization.MeshRefiner(mesh)
                 else:
-                    surf = loop.Structure(mesh)
+                    surf = loop.MeshRefiner(mesh)
             else:
-                surf = simple_subidivsion_triangles.Structure(mesh)
+                surf = simple_subidivsion_triangles.MeshRefiner(mesh)
 
         for i in range(level):
-            surf.main()
+            surf.refine()
     return surf.data
 
 

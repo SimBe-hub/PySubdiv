@@ -197,9 +197,9 @@ def print_model_interactive(mesh, iteration):
             for i in range(iteration):
                 if i == iteration - 1:
                     sub_div_update.data['creases'] = crease_arr
-                    sub_div_update.main()
+                    sub_div_update.refine()
                 else:
-                    sub_div_update.main()
+                    sub_div_update.refine()
 
         updated_surface = create_model(sub_div_update.data['faces'], sub_div_update.data['vertices'])
 
@@ -278,9 +278,9 @@ def print_model_interactive(mesh, iteration):
                     for i in range(iteration):
                         if i == iteration - 1:
                             sub_div_update.data['creases'] = crease_arr
-                            sub_div_update.main()
+                            sub_div_update.refine()
                         else:
-                            sub_div_update.main()
+                            sub_div_update.refine()
 
                     updated_surface = create_model(sub_div_update.data['faces'], sub_div_update.data['vertices'])
                     model.points = updated_surface.points

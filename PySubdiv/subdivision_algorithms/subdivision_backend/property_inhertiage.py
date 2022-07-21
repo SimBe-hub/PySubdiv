@@ -140,6 +140,9 @@ def pass_down_layer_boundary_vertices(edges_mid, vertex_property, dynamic_vertic
 
 def pass_down_boundary_edge_data(old_edges, new_edges, edges_mid, edges_boundary_data):
     idx_boundary_edges = np.nonzero(edges_boundary_data == 1)[0]
+    if len(idx_boundary_edges) == 0:
+        new_boundary_edges_data = np.zeros(len(new_edges))
+        return new_boundary_edges_data
     new_boundary_edges = edges_mid[idx_boundary_edges][:, 2]  # vertex
     max_idx_old_edges = np.max(old_edges)
     indices_new_boundary_edges = set()

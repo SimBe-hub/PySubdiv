@@ -4,7 +4,7 @@ from PySubdiv.data import data_structure, data
 from PySubdiv.subdivision_algorithms.subdivision_backend import property_inhertiage
 
 
-class Structure(object):
+class MeshRefiner(object):
 
     def __init__(self, mesh):
 
@@ -178,7 +178,7 @@ class Structure(object):
             self.data['unique_edges'][:, 1])
         return edge_verts
 
-    def main(self):
+    def refine(self):
 
         old_vertex_count = int(len(self.data['vertices']))
 

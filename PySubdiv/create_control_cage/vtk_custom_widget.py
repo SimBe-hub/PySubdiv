@@ -7,6 +7,7 @@ from pyvista import _vtk
 import weakref
 import logging
 
+
 class add_position_widget:
     def __init__(self, pyvista_plotter, point, point_indices, mesh, selection_mesh, subdivide_object=None):
         self.pyvista_plotter = pyvista_plotter
@@ -67,7 +68,7 @@ class add_position_widget:
         for mesh_idx in self.point_indices.keys():
             for point_idx in self.point_indices[mesh_idx].keys():
                 self.mesh[mesh_idx].points[int(point_idx)] += vector
-                if self.selection_mesh.n_points == 0: # when vertices are selected in subdivision state
+                if self.selection_mesh.n_points == 0:  # when vertices are selected in subdivision state
                     pass
                 else:
                     if type(self.point_indices[mesh_idx][point_idx]) == dict:
@@ -167,7 +168,6 @@ class add_position_widget:
         self.widget_2.Off()
         self.widget_3.Off()
         self.widget_4.Off()
-
 
 
 def checkbox_button_widget(pyvista_plotter, callback, idx_mesh, value=False,
@@ -430,8 +430,8 @@ def enable_cell_picking(pyvista_plotter, mesh=None, callback=None, through=True,
                 print(smesh.n_lines)
                 print(smesh.n_cells)
                 print(smesh["original_cell_ids"])
-                #tri_smesh = smesh.extract_surface().triangulate()
-                #print(tri_smesh)
+                # tri_smesh = smesh.extract_surface().triangulate()
+                # print(tri_smesh)
                 cids_to_get = smesh.extract_cells(cids)["original_cell_ids"]
                 picked.append(smesh.extract_cells(cids_to_get))
 
@@ -469,3 +469,54 @@ def enable_cell_picking(pyvista_plotter, mesh=None, callback=None, through=True,
 
     if start:
         pyvista_plotter.iren._style_class.StartSelect()
+
+
+def boundary_edges_id(polydata):
+
+    idFilter = vtk.vtkIdFilter()
+    idFilter.SetInputData(polydata)
+    # idFilter.SetIdsArrayName("ids")
+    idFilter.SetPointIds(True)
+    idFilter.SetCellIds(False)
+    # Available for vtk>=8.3:
+    idFilter.SetPointIdsArrayName("ids")
+    #idFilter.SetCellIdsArrayName("ids_cell")
+    idFilter.Update()
+
+    edges = vtk.vtkFeatureEdges()
+    edges.SetInputConnection(idFilter.GetOutputPort())
+    edges.BoundaryEdgesOn()
+    edges.ManifoldEdgesOff()
+    edges.NonManifoldEdgesOff()
+    edges.FeatureEdgesOff()
+    edges.Update()
+
+    array = edges.GetOutput().GetPointData().GetArray("ids")
+    n = edges.GetOutput().GetNumberOfPoints()
+    boundaryIds = []
+    for i in range(n):
+        boundaryIds.append(array.GetValue(i))
+    return boundaryIds
+
+def all_edges_id(polydata):
+    idFilter = vtk.vtkIdFilter()
+    idFilter.SetInputData(polydata)
+    # idFilter.SetIdsArrayName("ids")
+    idFilter.SetPointIds(True)
+    idFilter.SetCellIds(False)
+    # Available for vtk>=8.3:
+    idFilter.SetPointIdsArrayName("ids")
+    # idFilter.SetCellIdsArrayName(arrayName)
+    idFilter.Update()
+
+    edges = _vtk.vtkExtractEdges()
+    edges.SetInputDataObject(idFilter.GetOutput())
+    edges.Update()
+
+    array = edges.GetOutput().GetPointData().GetArray("ids")
+    n = edges.GetOutput().GetNumberOfPoints()
+    boundaryIds = []
+    for i in range(n):
+        boundaryIds.append(array.GetValue(i))
+    return boundaryIds
+

@@ -1,5 +1,5 @@
 from PySubdiv.data import files
-from PySubdiv.optimization import variational_minimazation
+from PySubdiv.optimization import minimization
 
 # automatic fitting of the control cage to an input mesh with a variational minimization approach after Wu et. al. 2017
 # [http://dx.doi.org/10.1007/s41095-017-0088-2]
@@ -30,11 +30,11 @@ original_meshes = [files.read('meshes/gemp_mesh_0_scaled.obj'),
 # The boundaries for the control points is the bounding box of the control cage.
 # a_z and lambda_e coefficients used in the cost functions should be positive.
 
-optimizer = variational_minimazation.mesh_optimizer(faultDomainControlCage_simple_subdivision, original_meshes,
-                                                    meshes_to_fit=None, use_dynamic_faces=True,
-                                                    iterations_subdivision=1, variable_edges='automatic',
-                                                    variable_vertices='automatic', use_bounds_p=False,
-                                                    a_z=25, lambda_e=1)
+optimizer = minimization.SurfaceFit(faultDomainControlCage_simple_subdivision, original_meshes,
+                                                meshes_to_fit=None, use_mesh_data=True,
+                                                iterations_subdivision=1, variable_edges='automatic',
+                                                variable_vertices='automatic', use_bounds_p=False,
+                                                a_z=25, lambda_e=1)
 # Perform the optimization:
 # Set the number of iterations for the optimization with number_iterations, epsilon_0 is the convergence tolerance.
 # The iteration of the swam can be set with iterations_swarm and it's particles with nr_particles.
@@ -44,7 +44,7 @@ optimizer.optimize(number_iteration=5, epsilon_0=1e-5, iterations_swarm=500, nr_
                    w=0.9)
 
 # Get the optimized control cage (position of control points and crease sharpness values)
-faultDomainControlCageOptimized = optimizer.control_cage
+faultDomainControlCageOptimized = optimizer.control_mesh
 # save the mesh and data and visualize
 faultDomainControlCageOptimized .save_mesh('controlCage/FaultDomainControlCageOptimized.obj')
 faultDomainControlCageOptimized .save_data('controlCage/FaultDomainControlCageOptimizedData')

@@ -50,7 +50,7 @@ def objective_p(p, mesh, v, z, lambda_z, a_z, variable_vertices, iterations=1):
     return loss
 
 
-def objective_h(h, mesh, v, z, lambda_z, a_z, variable_edges, iterations=1):
+def objective_h(h, mesh, v, z, lambda_z, a_z, variable_edges, iterations=1, simple_error=True):
     """
     Objective function to minimize the distance between the control points p on the control cage (provided mesh) and
     vertices on the original mesh (v) regarding the crease values h, control points p are fixed.
@@ -82,27 +82,31 @@ def objective_h(h, mesh, v, z, lambda_z, a_z, variable_edges, iterations=1):
     """
     loss = []  # list to store the loss for each member of the swarm
     # for each member of the swarm a subdivision has to be performed. Each with different crease values
-    for i in range(len(h)):
+    #for i in range(len(h)):
 
-        h_round = h[i].T  # transpose the provided crease values to fit the needed shape
-        mesh_calc = copy.deepcopy(mesh)  # copy the control cage
-        mesh_calc.set_crease(h_round, variable_edges)  # set crease values to the copied mesh
-        subdivided_mesh = mesh_calc.subdivide(iterations)  # subdivide the mesh one time
-        mp = subdivided_mesh.data['vertices']  # mp vertices of the mesh after subdivision position only depends on cv
-        diff_v_mp = v - mp  # v-mp: vector between vertices of the original mesh and the control cage
-        dot_product = []  # list to store the dot product
-        # iterate over each scalar and calculate the dot product (first part of objective function)
-        for j in range(len(lambda_z)):
-            dot_product.append(np.dot(lambda_z[j], (z - diff_v_mp)[j]))
-        # calculate losses for each vertex pair p and v as distance to the vectors
-        losses = dot_product + a_z / 2 * np.linalg.norm(z - diff_v_mp) ** 2
-        # sum up the losses and return the loss which should be minimized for each member of the swarm
-        loss.append(losses.sum())
+    #h_round = h[i].T  # transpose the provided crease values to fit the needed shape
+    h_round = h.T
+    mesh_calc = copy.deepcopy(mesh)  # copy the control cage
+    mesh_calc.set_crease(h_round, variable_edges)  # set crease values to the copied mesh
+    subdivided_mesh = mesh_calc.subdivide(iterations)  # subdivide the mesh one time
+    if simple_error:
+        mp = subdivided_mesh.data['vertices'][:len(mesh.vertices)]  # mp vertices of the mesh after subdivision position only depends on cv
+    else:
+        mp = subdivided_mesh.data['vertices']
+    diff_v_mp = v - mp  # v-mp: vector between vertices of the original mesh and the control cage
+    dot_product = []  # list to store the dot product
+    # iterate over each scalar and calculate the dot product (first part of objective function)
+    for j in range(len(lambda_z)):
+        dot_product.append(np.dot(lambda_z[j], (z - diff_v_mp)[j]))
+    # calculate losses for each vertex pair p and v as distance to the vectors
+    losses = dot_product + a_z / 2 * np.linalg.norm(z - diff_v_mp) ** 2
+    # sum up the losses and return the loss which should be minimized for each member of the swarm
+    #loss.append(losses.sum())
 
-    return np.array(loss)
+    return losses.sum()
 
 
-def objective_z(mesh, v, lambda_z, a_z, lambda_e, iterations=1):
+def objective_z(mesh, v, lambda_z, a_z, lambda_e, iterations=1, simple_error=True):
     """
     Objective function to minimize the constrain z = v-mp. Minima is a closed form solution when z becomes maximal.
     Position of control vertices p and crease values h are constant
@@ -130,8 +134,11 @@ def objective_z(mesh, v, lambda_z, a_z, lambda_e, iterations=1):
     """
     mesh_calc = copy.deepcopy(mesh)  # copy the control cage
     subdivided_mesh = mesh_calc.subdivide(iterations)  # subdivide the copied mesh
-    mp = subdivided_mesh.data['vertices']  # subdivided vertices
-
+    #mp = subdivided_mesh.data['vertices']  # subdivided vertices
+    if simple_error:
+        mp = subdivided_mesh.data['vertices'][:len(mesh.vertices)]  # subdivided vertices
+    else:
+        mp = subdivided_mesh.data['vertices']
     diff_v_mp = v - mp  # vector between v[i] and mp[i]
     res = 1 - lambda_e / a_z * np.linalg.norm(diff_v_mp - lambda_z / a_z, axis=1)  # closed form result of z
     z = np.where(res < 0, 0, res)  # if res is smaller than take zero otherwise res

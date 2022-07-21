@@ -3,7 +3,7 @@ from PySubdiv.data import data
 from PySubdiv.subdivision_algorithms.subdivision_backend import vertex_masks
 
 
-class Structure(object):
+class MeshRefiner(object):
 
     def __init__(self, mesh):
 
@@ -253,7 +253,7 @@ class Structure(object):
         return edge_verts, idx_boundary_odd_edges, idx_non_manifold_edges, idx_non_manifold_verts, \
                idx_infinite_crease, idx_crease
 
-    def main(self):
+    def refine(self):
 
         old_vertex_count = int(len(self.data['vertices']))
         #print("old_vertex_count", self.data['vertices'][old_vertex_count])

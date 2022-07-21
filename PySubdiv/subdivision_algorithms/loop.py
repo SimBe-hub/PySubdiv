@@ -6,8 +6,8 @@ from PySubdiv.subdivision_algorithms.subdivision_backend import property_inherti
 from scipy.sparse import lil_matrix
 
 
-class Structure(object):
-
+class MeshRefiner(object):
+    # initialize the necessary data from the mesh
     def __init__(self, mesh):
         self.data = data.data_dictionary()
         self.data['vertices'] = mesh.data["vertices"]
@@ -78,25 +78,25 @@ class Structure(object):
         self.data['vertices'].append(v)
         return len(self.data['vertices']) - 1
 
-    def add_vertex_multiple(self, v):
-        start = len(self.data['vertices'])
-        self.data['vertices'].extend(v)
-        return np.arange(start, len(self.data['vertices']))
+    # def add_vertex_multiple(self, v):
+    #     start = len(self.data['vertices'])
+    #     self.data['vertices'].extend(v)
+    #     return np.arange(start, len(self.data['vertices']))
 
-    def quads_contain(self, *indices):
-        connected = []
-
-        # For every quad
-        for curQuad, quadVerts in enumerate(self.data['faces'], 0):
-
-            # If every indice exists in the quad, add it to our list
-            for idx in indices:
-                if idx not in quadVerts:
-                    break
-            else:
-                connected.append(curQuad)
-
-        return connected
+    # def quads_contain(self, *indices):
+    #     connected = []
+    #
+    #     # For every quad
+    #     for curQuad, quadVerts in enumerate(self.data['faces'], 0):
+    #
+    #         # If every indice exists in the quad, add it to our list
+    #         for idx in indices:
+    #             if idx not in quadVerts:
+    #                 break
+    #         else:
+    #             connected.append(curQuad)
+    #
+    #     return connected
 
     # def midpoint(self, *indices):
     #     mpoint = np.array([0, 0, 0])
@@ -105,22 +105,22 @@ class Structure(object):
     #     mpoint = mpoint / (len(indices))
     #     return mpoint
 
-    def midpoint_multiple(self, idx_arr0, idx_arr1, idx_arr2=None, idx_arr3=None):
-
-        vertices = np.asanyarray(self.data['vertices'])
-        if idx_arr2 is None and idx_arr3 is None:
-            mpoint = (np.add(vertices[[idx_arr0]], vertices[[idx_arr1]])) / 2
-        else:
-            if self.data['mesh_type'] == 'quadrilateral':
-                add_1 = np.add(vertices[[idx_arr0]], vertices[[idx_arr1]])
-                add_2 = np.add(vertices[[idx_arr2]], vertices[[idx_arr3]])
-                mpoint = np.add(add_1, add_2) / 4
-            else:
-                add_1 = np.add(vertices[[idx_arr0]], vertices[[idx_arr1]]) * 0.375
-                add_2 = np.add(vertices[[idx_arr2]], vertices[[idx_arr3]]) * 0.125
-                mpoint = np.add(add_1, add_2)
-
-        return mpoint
+    # def midpoint_multiple(self, idx_arr0, idx_arr1, idx_arr2=None, idx_arr3=None):
+    #
+    #     vertices = np.asanyarray(self.data['vertices'])
+    #     if idx_arr2 is None and idx_arr3 is None:
+    #         mpoint = (np.add(vertices[[idx_arr0]], vertices[[idx_arr1]])) / 2
+    #     else:
+    #         if self.data['mesh_type'] == 'quadrilateral':
+    #             add_1 = np.add(vertices[[idx_arr0]], vertices[[idx_arr1]])
+    #             add_2 = np.add(vertices[[idx_arr2]], vertices[[idx_arr3]])
+    #             mpoint = np.add(add_1, add_2) / 4
+    #         else:
+    #             add_1 = np.add(vertices[[idx_arr0]], vertices[[idx_arr1]]) * 0.375
+    #             add_2 = np.add(vertices[[idx_arr2]], vertices[[idx_arr3]]) * 0.125
+    #             mpoint = np.add(add_1, add_2)
+    #
+    #     return mpoint
 
     # def midpoint_edges_old(self, *indices):
     #     mpoint = np.array([0, 0, 0])
@@ -129,9 +129,9 @@ class Structure(object):
     #     mpoint = mpoint / (len(indices))
     #     return mpoint
 
-    def midpoint_edges(self, indices, weights):
-        mpoint = np.sum(self.data['vertices'][indices] * weights.reshape(-1, 1), axis=0)
-        return mpoint
+    # def midpoint_edges(self, indices, weights):
+    #     mpoint = np.sum(self.data['vertices'][indices] * weights.reshape(-1, 1), axis=0)
+    #     return mpoint
 
     # def fractional_weight(self, index_incident_edges):
     #     transition_count = 0
@@ -144,14 +144,14 @@ class Structure(object):
     #     fractional_weight = transition_sum / transition_count
     #     return fractional_weight
 
-    def generate_face_points(self):
-        faces_arr = np.asanyarray(self.data['faces'])  # convert list of faces to np.array
-        verts_arr = np.asanyarray(self.data['vertices'])  # convert list of vertices to np.array
-        # calculate coordinates of face points
-        face_points = (np.sum(verts_arr[faces_arr], axis=1) / len(faces_arr[0])).tolist()
-
-        quad_ctr_list = self.add_vertex_multiple(face_points)  # List of indices of the facepoints in the vertices array
-        return quad_ctr_list
+    # def generate_face_points(self):
+    #     faces_arr = np.asanyarray(self.data['faces'])  # convert list of faces to np.array
+    #     verts_arr = np.asanyarray(self.data['vertices'])  # convert list of vertices to np.array
+    #     # calculate coordinates of face points
+    #     face_points = (np.sum(verts_arr[faces_arr], axis=1) / len(faces_arr[0])).tolist()
+    #
+    #     quad_ctr_list = self.add_vertex_multiple(face_points)  # List of indices of the facepoints in the vertices array
+    #     return quad_ctr_list
 
     def generate_edge_points(self, subdivison_weight_matrix):
         # np.array to store vertices of the edge points
@@ -181,13 +181,18 @@ class Structure(object):
         else:
             idx_non_manifold_verts = np.unique(self.data['unique_edges'][idx_non_manifold_edges])
 
-        idx_zero_crease = idx_edges[np.nonzero(self.data['creases'][idx_edges] == 0)[0]]
-        # array with indices of unique_edges where crease == 1
-        idx_infinite_crease = idx_edges[np.nonzero(self.data['creases'][idx_edges] == 1)[0]]
+        if len(idx_edges != 0):
+            idx_zero_crease = idx_edges[np.nonzero(self.data['creases'][idx_edges] == 0)[0]]
+            # array with indices of unique_edges where crease == 1
+            idx_infinite_crease = idx_edges[np.nonzero(self.data['creases'][idx_edges] == 1)[0]]
 
-        # array with indices of unique_edges where crease > 0 & < 1
-        idx_crease = idx_edges[np.nonzero((self.data['creases'][idx_edges] > 0)
-                                          & (self.data['creases'][idx_edges] < 1))[0]]
+            # array with indices of unique_edges where crease > 0 & < 1
+            idx_crease = idx_edges[np.nonzero((self.data['creases'][idx_edges] > 0)
+                                              & (self.data['creases'][idx_edges] < 1))[0]]
+        else:
+            idx_zero_crease = []
+            idx_infinite_crease = []
+            idx_crease = []
 
         # calculating the position for boundary odd vertices with zero crease #part must be revisited
         # creases for boundary odd vertices might  not work correctly
@@ -261,18 +266,18 @@ class Structure(object):
         return edge_verts, idx_boundary_odd_edges, idx_non_manifold_edges, idx_non_manifold_verts, \
                idx_infinite_crease, idx_crease, subdivison_weight_matrix
 
-    def main(self):
+    def refine(self):
         old_vertex_count = int(len(self.data['vertices']))
         subdivision_weight_matrix = lil_matrix((old_vertex_count + len(self.data['unique_edges']), old_vertex_count))
 
         #############################################################################################################
-        # Part 1: Generating face points
-        # -----------------------------------------------------------
-        if self.data['mesh_type'] == 'quadrilateral':
-            quad_ctr_list = self.generate_face_points()
-        else:
-            # triangular meshes don't require face points
-            pass
+        # # Part 1: Generating face points
+        # # -----------------------------------------------------------
+        # if self.data['mesh_type'] == 'quadrilateral':
+        #     quad_ctr_list = self.generate_face_points()
+        # else:
+        #     # triangular meshes don't require face points
+        #     pass
 
         # Part 2: Generating edge points/ edge children
         # -----------------------------------------------------------
@@ -303,7 +308,6 @@ class Structure(object):
         # -----------------------------------------------------------
         sum_sharp_around_vertex = np.zeros(old_vertex_count)
         vertex_edges_connected = self.data['vertex_edges_dictionary']
-
         for i in range(old_vertex_count):
 
             connected_verts = self.data['vertices_connected_dictionary'][i]
@@ -313,7 +317,6 @@ class Structure(object):
 
             connected_faces = self.data['vertex_faces_dictionary'][i]
             edges_sharpness_around_vertex = edges_with_crease[connected_edge_mids][:, 2]
-
 
             number_creases_around_vertex = np.count_nonzero((edges_sharpness_around_vertex > 0) &
                                                             (edges_sharpness_around_vertex < 1))
@@ -360,13 +363,10 @@ class Structure(object):
                             w3_sharp = np.where(np.isin(connected_verts, connected_non_manifold_verts), 0.125, 0)
                             # fractional weight
                             pWeight = vertex_masks.fractional_weight(self, connected_edge_mids)
-                            print(pWeight)
                             cWeight = 1.0 - pWeight
                             w1_combined, w3_combined = vertex_masks.combine_vertex_masks(w1_corner, w1_sharp, w3_corner,
                                                                                          w3_sharp,
                                                                                          pWeight, cWeight)
-                            print(w1_combined)
-                            print(w3_combined)
 
                             subdivision_weight_matrix[i, i] = w1_combined
                             subdivision_weight_matrix[i, connected_verts] = w3_combined
@@ -374,13 +374,30 @@ class Structure(object):
             elif i in idx_boundary_verts:
                 # parent vertices are boundary vertices
 
-                w1 = 0.75
-                connected_crease_edges = connected_edge_mids[
-                    np.isin(connected_edge_mids, idx_boundary_odd_edges)]
-                connected_crease_verts = np.unique(self.data['unique_edges'][connected_crease_edges])
-                w3 = np.where(np.isin(connected_verts, connected_crease_verts), 0.125, 0)
-                subdivision_weight_matrix[i, i] = w1
-                subdivision_weight_matrix[i, connected_verts] = w3
+                if number_creases_around_vertex + sharp_edges_around_vertex >= 2:
+
+                    # corner mask for parent vertex, smooth mask for child vertices
+                    w1_sharp = 1.0
+                    w3_sharp = 0
+                    w1_smooth, w3_smooth = vertex_masks.calculate_smooth_mask_for_vertex(number_faces, number_edges)
+
+                    pWeight = vertex_masks.fractional_weight(self, connected_edge_mids)
+                    cWeight = 1.0 - pWeight
+                    w1_combined, w3_combined = vertex_masks.combine_vertex_masks(w1_sharp, w1_smooth, w3_sharp,
+                                                                                 w3_smooth,
+                                                                                 pWeight, cWeight)
+                    subdivision_weight_matrix[i, i] = w1_combined
+                    subdivision_weight_matrix[i, connected_verts] = w3_combined
+
+                else:
+
+                    w1 = 0.75
+                    connected_crease_edges = connected_edge_mids[
+                        np.isin(connected_edge_mids, idx_boundary_odd_edges)]
+                    connected_crease_verts = np.unique(self.data['unique_edges'][connected_crease_edges])
+                    w3 = np.where(np.isin(connected_verts, connected_crease_verts), 0.125, 0)
+                    subdivision_weight_matrix[i, i] = w1
+                    subdivision_weight_matrix[i, connected_verts] = w3
 
             # parent and boundary vertices are smooth when no incident edge is sharp/crease
             # a vertex with one sharp edge/crease is a dart and calculated with the smooth vertex rule
@@ -413,16 +430,20 @@ class Structure(object):
                 subdivision_weight_matrix[i, i] = w1_combined
                 subdivision_weight_matrix[i, connected_verts] = w3_combined
 
+
         subdivision_weight_matrix = subdivision_weight_matrix.tocsr()
         self.data['subdivision_weight_matrix'] = subdivision_weight_matrix
         self.data['vertices'] = subdivision_weight_matrix.dot(self.data['vertices'][:old_vertex_count])
+
         ###############################################################################################################
-        # Part 4: Create subdivided model
+        # Part 4: Build the topology for the new mesh
         # -----------------------------------------------------------
-        # 4 child faces per parent face with 3 or for vertices position. Dependent on mesh type.
+        # 4 child faces per parent face with 3 vertices position.
         new_faces = np.zeros((4 * len(self.data['faces']), len(self.data['faces'][0])), dtype=int)
 
+        # find indices of the new edge points
         idx_edge_mids = np.arange(len(self.data['unique_edges']))
+
         first_idx_edge_points = idx_edge_mids + old_vertex_count
 
         edges_directed = np.zeros((len(self.data['unique_edges']) * 2, 3), dtype=int)
@@ -459,14 +480,27 @@ class Structure(object):
 
         new_edges, indices = np.unique(to_edges, return_index=True, axis=0)
         new_edges = np.vstack([to_edges[index] for index in sorted(indices)])
+
+
+        ###############################################################################################################
+        # Part 5: Pass down data to the refinement
+        # -----------------------------------------------------------
+
+        # calculate CSV for the new edges. That information is derived from edges and vertices of the coarse mesh.
+        # arrays to store sum of CSV around each edge and CSV of edge itself
+
+
         crease_around_vertex = np.zeros((len(new_edges), 1))
         mid_edge_crease = np.zeros((len(new_edges), 1))
+        # find old vertices with that are adjacent to old edges with crease
         idx_vert_with_crease = np.nonzero(sum_sharp_around_vertex > 0)[0]
-
+        # find crease value of the new
         for idx in idx_vert_with_crease:
-            arr_idx = np.nonzero(new_edges[:, 0] == idx)
+            # find edges that are connected to the crease vertex
+            arr_idx = np.nonzero(new_edges[:, 0] == idx)[0]
             crease_around_vertex[arr_idx] = sum_sharp_around_vertex[idx]
         edges_mid_crease = np.hstack((edges_mid_direction_1, self.data['creases']))
+
         mid_point_crease = edges_mid_crease[edges_mid_crease[:, 3] > 0][:, 2:]
 
         for i in range(len(mid_point_crease)):
@@ -474,15 +508,15 @@ class Structure(object):
                 (new_edges[:, 0] < old_vertex_count) & (new_edges[:, 1] == mid_point_crease[i, 0]))
             mid_edge_crease[new_edges_masked] = mid_point_crease[i, 1]
 
+
         # can yield crease values > 1 must be looked into there might be an error in calculation
         new_edges_crease = np.where((mid_edge_crease == 1) | (crease_around_vertex - mid_edge_crease == 1), 1,
-                                    np.where(crease_around_vertex * 0.25 + mid_edge_crease * 0.5 - 1 > 0,
-                                             crease_around_vertex * 0.25 + mid_edge_crease * 0.5 - 1, 0))
+                                    np.where(crease_around_vertex * 0.25 + mid_edge_crease * 0.75 - 1 > 0,
+                                             crease_around_vertex * 0.25 + mid_edge_crease * 0.75 - 1, 0))
         # correct crease values > 1 by setting them to 1
         new_edges_crease = np.where(new_edges_crease > 1, 1, new_edges_crease)
 
         # set dynamic vertices for fitting purposes with signed distance function
-
         if 'boundary_layer_vertices' in self.data:
             self.data['boundary_layer_vertices'] = \
                 property_inhertiage.pass_down_layer_boundary_vertices(edges_mid_direction_1,
@@ -491,10 +525,10 @@ class Structure(object):
                                                                       self.data['edge_faces_dictionary'],
                                                                       self.data['dynamic_faces'])
 
-        if self.data['fitting_method'] is not None:
+        if "dynamic_faces" in self.data and "dynamic_vertices" in self.data:
             dynamic_faces_vertices_edges = property_inhertiage.pass_down_dynamic_faces_vertices(
                 self.data['dynamic_faces'], self.data['dynamic_vertices'], self.data['unique_edges'],
-                self.data['edge_faces_dictionary'], self.data['fitting_method'])
+                self.data['edge_faces_dictionary'], 'dynamic_faces')
 
             self.data['dynamic_faces'] = dynamic_faces_vertices_edges[0]
             self.data['dynamic_vertices'] = dynamic_faces_vertices_edges[1]
@@ -519,6 +553,7 @@ class Structure(object):
                 property_inhertiage.pass_down_boundary_edge_data(self.data['edges'], new_edges, edges_mid_direction_1,
                                                                  self.data['boundary_edges_data'])
 
+
         self.data['faces'] = new_faces
         edges = calculation.faces_to_edges(self.data['faces'], self.data['mesh_type'])
         self.data['edges'] = edges
@@ -533,3 +568,4 @@ class Structure(object):
                                                                                              self.data['unique_edges'])
         self.data['vertex_faces_dictionary'] = data_structure.vertex_faces_dict(self.data['faces'],
                                                                                 self.data['vertices'])
+

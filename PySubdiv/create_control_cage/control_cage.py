@@ -16,7 +16,7 @@ import easygui
 from pyvistaqt import QtInteractor, MainWindow
 
 from qtpy import QtWidgets
-from qtpy.QtWidgets import QLabel, QPushButton, QInputDialog, QMessageBox, QComboBox, QListWidget
+from qtpy.QtWidgets import QLabel, QPushButton, QInputDialog, QMessageBox, QComboBox, QListWidget, QAction
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 
@@ -688,7 +688,7 @@ class ControlMesh:
                 color = 'yellow'
 
             self.plotter.add_mesh(self.selection_polygon_mesh, color=color, pickable=False, point_size=15,
-                                  name='selection_polygon', show_edges=True)
+                                  name='selection_polygon', show_edges=True, style="wireframe")
 
     def triangulate_selection(self, check):
         if self._state == States.mesh_decimation:
@@ -713,7 +713,8 @@ class ControlMesh:
                 else:
                     self.plotter.add_checkbox_button_widget(self.selection_to_polygon, position=(80, 10))
                     self.button_widgets_utils['polygon_button'] = len(self.plotter.button_widgets) - 1
-                self.plotter.add_text('abort', font_size=6, position=(16, 70), name="triangulate_abort_text")
+                self.plotter.add_text('abort', font_size=6, position=(18, 85), name="triangulate_abort_text")
+
 
             else:
                 if len(self.selection) == 3:
@@ -895,7 +896,7 @@ class ControlMesh:
             self.deselect_all_meshes(True)
             self.plotter.add_mesh(self.selection_mesh, color='purple', pickable=True, point_size=10, name='selection')
 
-    def add_meshes_to_input_and_plotter(self, mesh, idx_mesh, new_mesh=False, merged_mesh=False):
+    def add_meshes_to_input_and_plotter(self, mesh, idx_mesh, new_mesh=False, merged_mesh=False, reset_camera=False):
         if None in self.input_meshes:
             idx_mesh = self.input_meshes.index(None)
             self.input_meshes[idx_mesh] = mesh
@@ -926,10 +927,6 @@ class ControlMesh:
             edges = mesh.extract_all_edges().lines.reshape((-1, 3))[:, 1:]
 
             boundary_edges = boundary.lines.reshape((-1, 3))[:, 1:]
-            # points_masked_non_manifold_edges = non_manifold_points[non_manifold_edges]
-            # print(points_masked_non_manifold_edges)
-            # print(points_masked_edges)
-
             edge_dict = {}
 
             for edge_idx, edge in enumerate(boundary_edges):
@@ -971,7 +968,6 @@ class ControlMesh:
 
         if merged_mesh:
             if None in self.merged_meshes_idx.values():
-                print(self.merged_meshes_idx)
                 counter = 0
                 for mesh_index, merged_mesh_index in self.merged_meshes_idx.items():
                     if merged_mesh_index is None:
@@ -1002,7 +998,8 @@ class ControlMesh:
             mesh.point_data['non_manifold_vertices'] = non_manifold_vertices
 
         # add the mesh to the plotter
-        self.plotter.add_mesh(mesh, color="green", show_edges=True, name=f"mesh_{idx_mesh}", pickable=False)
+        self.plotter.add_mesh(mesh, color="green", show_edges=True, name=f"mesh_{idx_mesh}", pickable=False,
+                              reset_camera=reset_camera)
         self.plotter.add_point_labels([mesh.center_of_mass()], [f"mesh_{idx_mesh}"], name=f"labels_mesh_{idx_mesh}")
         x_pos = 10
         offset = 50 * idx_mesh
@@ -1348,9 +1345,9 @@ class ControlMesh:
                 self.plotter.add_text('set reduction ', font_size=6, position=(780, 60), name='set_reduction_button')
                 self.button_widgets_utils['mesh_decimation_reduction'] = len(self.plotter.button_widgets) - 1
 
-                self.plotter.add_checkbox_button_widget(self.abort_decimation, position=(900, 10), color_on='orange',
+                self.plotter.add_checkbox_button_widget(self.abort_decimation, position=(1400, 10), color_on='orange',
                                                         color_off='orange')
-                self.plotter.add_text('abort decimation', font_size=6, position=(880, 60),
+                self.plotter.add_text('abort decimation', font_size=6, position=(1380, 60),
                                       name='abort_decimation_button')
                 self.button_widgets_utils['mesh_abort_decimation'] = len(self.plotter.button_widgets) - 1
 
@@ -1631,7 +1628,7 @@ class ControlMesh:
                 path_txt = [file for file in sorted(os.listdir(file_path[0])) if file.endswith(".pkl")]
 
                 idx_mesh = len(self.input_meshes)
-                idx_mesh = self.add_meshes_to_input_and_plotter(mesh, idx_mesh)
+                idx_mesh = self.add_meshes_to_input_and_plotter(mesh, idx_mesh, reset_camera=True)
 
                 msg = 'Load additional data for the file?'
                 user_bool = easygui.ynbox(msg)
@@ -2141,7 +2138,7 @@ def define_volumes(mesh):
     return volumes_list
 
 
-class MyMainWindow(MainWindow):
+class PySubdivGUI(MainWindow):
 
     def __init__(self, input_meshes, parent=None, show=True):
         QtWidgets.QMainWindow.__init__(self, parent)
@@ -2153,6 +2150,7 @@ class MyMainWindow(MainWindow):
         # add the pyvista interactor object
         self.plotter = QtInteractor(self.frame)
         self.plotter.background_color = "dimgrey"
+        self.plotter.enable_depth_peeling(10)
 
         vlayout.addWidget(self.plotter.interactor)
 
@@ -2234,8 +2232,7 @@ class MyMainWindow(MainWindow):
         self.edges_mesh = None  # reference for the edge selection
         self.selected_edges = []
         self.subdiv = None  # reference to subidiv class
-        self.constrained_meshes = {} # dictionary to hold reference of points from constrained selection to mesh idx
-
+        self.constrained_meshes = {}  # dictionary to hold reference of points from constrained selection to mesh idx
 
     def check_meshes(self, input_meshes):
         list_poly_data = []
@@ -2409,7 +2406,7 @@ class MyMainWindow(MainWindow):
                 self.selection_idx[mesh_idx] = {}
 
             if point_idx in self.selection_idx[mesh_idx]:
-                self.selection.pop(point_idx)
+                self.selection.pop(self.selection_idx[mesh_idx][point_idx])
                 self.selection_idx[mesh_idx].pop(point_idx)
             else:
                 self.selection.append(self.control_points.points[point_idx])
@@ -2446,7 +2443,8 @@ class MyMainWindow(MainWindow):
                 color = 'yellow'
 
             self.plotter.add_mesh(self.selection_polygon_mesh, color=color, pickable=False, point_size=15,
-                                  name='selection_polygon', show_edges=True, reset_camera=False)
+                                  name='selection_polygon', show_edges=True, reset_camera=False, style="wireframe",
+                                  line_width=10)
 
     def triangulate_selection(self, check):
         if self._state == States.mesh_decimation:
@@ -2469,9 +2467,10 @@ class MyMainWindow(MainWindow):
                     self.plotter.button_widgets[idx_polygon_button].GetRepresentation().SetVisibility(True)
                     self.plotter.button_widgets[idx_polygon_button].On()
                 else:
-                    self.plotter.add_checkbox_button_widget(self.selection_to_polygon, position=(80, 10))
+                    self.plotter.add_checkbox_button_widget(self.selection_to_polygon, position=(105, 10))
                     self.button_widgets_utils['polygon_button'] = len(self.plotter.button_widgets) - 1
-                self.plotter.add_text('abort', font_size=6, position=(16, 70), name="triangulate_abort_text")
+                self.plotter.add_text('abort', font_size=6, position=(23, 80), name="triangulate_abort_text")
+                self.plotter.add_text('start polygon', font_size=6, position=(98, 65), name="polygon_button_text")
 
             else:
                 if len(self.selection) == 3:
@@ -2498,6 +2497,7 @@ class MyMainWindow(MainWindow):
                 self.plotter.button_widgets[idx_polygon_button].GetRepresentation().SetState(False)
                 self.plotter.button_widgets[idx_polygon_button].Off()
                 self.plotter.remove_actor("triangulate_abort_text")
+                self.plotter.remove_actor("polygon_button_text")
                 self.set_state(States.picking_selection)
             else:
                 button_idx = self.button_widgets_utils['triangulation_button']
@@ -2508,6 +2508,7 @@ class MyMainWindow(MainWindow):
                 self.plotter.button_widgets[idx_polygon_button].GetRepresentation().SetState(False)
                 self.plotter.button_widgets[idx_polygon_button].Off()
                 self.plotter.remove_actor("triangulate_abort_text")
+                self.plotter.remove_actor("polygon_button_text")
 
     def constrain_selection_to_boundary(self, idx_mesh):
         button = self.select_constrain_button_dict[idx_mesh]
@@ -2543,12 +2544,27 @@ class MyMainWindow(MainWindow):
                 if angle > threshold:
                     vertices_after_threshold.append(footpoint)
             boundary_vertices = np.array(vertices_after_threshold)
-            self.plotter.add_mesh(mesh, color='red', pickable=False, show_edges=True,
-                                  name=f"mesh_{idx_mesh}", opacity=100, reset_camera=False)
 
-            self.plotter.add_points(boundary_vertices, pickable=True, name=f"constrained_mesh{idx_mesh}",
-                                    reset_camera=False)
-            self.constrained_meshes[idx_mesh] = pv.PolyData(boundary_vertices)
+            # find intersection
+            if len(self.selected_meshes) > 0:
+                for idx_selected in self.selected_meshes:
+                    if idx_mesh != idx_selected:
+                        intersection_points = self.input_meshes[idx_mesh].intersection(self.input_meshes[idx_selected],
+                                                                                       split_first=False,
+                                                                                       split_second=False)[0].points
+                        if len(intersection_points) > 0:
+                            print(intersection_points)
+                            boundary_vertices = np.concatenate((boundary_vertices, intersection_points))
+
+            if len(boundary_vertices) == 0:
+                pass
+            else:
+                self.plotter.add_mesh(mesh, color='red', pickable=False, show_edges=True,
+                                      name=f"mesh_{idx_mesh}", opacity=100, reset_camera=False)
+
+                self.plotter.add_points(boundary_vertices, pickable=True, name=f"constrained_mesh{idx_mesh}",
+                                        reset_camera=False)
+                self.constrained_meshes[idx_mesh] = pv.PolyData(boundary_vertices)
 
         else:
             button.setToolTip('constrain selection to boundary vertices')
@@ -2560,6 +2576,7 @@ class MyMainWindow(MainWindow):
 
     def selection_to_polygon(self, check):
         if check:
+            self.plotter.add_text('triangulate', font_size=6, position=(98, 65), name="polygon_button_text")
             self.deselect_all_meshes(True)
             self._state = States.polygon_cutting
             self.plotter.enable_point_picking(self.point_to_polygon, use_mesh=True, pickable_window=False)
@@ -2567,8 +2584,17 @@ class MyMainWindow(MainWindow):
                                   reset_camera=False)
             self.selection_polygon_mesh.points = np.array(self.selection)
         else:
+            self.plotter.remove_actor("polygon_button_text")
             # delauny triangulation with the polygon as mask
+            self.plotter.remove_actor("triangulate_abort_text")
             mesh = pv.PolyData(np.array(self.selection)).delaunay_2d(edge_source=self.selection_polygon_mesh)
+            if mesh.n_cells == 0:
+                faces = self.selection_polygon_mesh.faces
+                faces[1:] = np.flip(faces[1:])
+                self.selection_polygon_mesh.faces = faces
+
+                mesh = pv.PolyData(np.array(self.selection)).delaunay_2d(edge_source=self.selection_polygon_mesh)
+
             idx_mesh = len(self.input_meshes)  # index in self.input_meshes
             # self.new_meshes_idx[idx_mesh] = len(self.new_meshes_idx.keys())
 
@@ -2587,7 +2613,8 @@ class MyMainWindow(MainWindow):
                 self.button_widgets_utils["polygon_button"]].GetRepresentation().SetVisibility(False)
 
             # self.button_widgets_utils.pop("polygon_button", None)
-            self.plotter.enable_point_picking(self.point_to_selection, use_mesh=True, pickable_window=False)
+            self.plotter.enable_point_picking(self.point_to_selection, use_mesh=True, pickable_window=False,
+                                              show_message=False)
             self._state = States.picking_selection
 
     def selection_undo(self, check):
@@ -2629,7 +2656,7 @@ class MyMainWindow(MainWindow):
                                                              + self.selection_polygon_idx)
 
                 self.plotter.add_mesh(self.selection_polygon_mesh, color='lightblue', pickable=False, point_size=15,
-                                      name='selection_polygon', show_edges=True, reset_camera=False)
+                                      name='selection_polygon', show_edges=True, reset_camera=False, line_width=10)
             else:
                 return
         else:
@@ -2646,7 +2673,7 @@ class MyMainWindow(MainWindow):
             return
         if picking:
             self.set_state(States.picking_selection)
-            self.plotter.add_text('select', font_size=6, position=(210, 60), name="selection_text")
+            self.plotter.add_text('deselect vertices ', font_size=6, position=(285, 65), name="selection_text")
             if len(self.selection) != 0:
                 self.plotter.add_mesh(self.selection_mesh, color='purple', pickable=False, point_size=10,
                                       name='selection', reset_camera=False)
@@ -2660,12 +2687,12 @@ class MyMainWindow(MainWindow):
                 return
 
             self.set_state(States.deleting_selection)
-            self.plotter.add_text('delete', font_size=6, position=(210, 60), name="selection_text")
+            self.plotter.add_text('select vertices ', font_size=6, position=(285, 65), name="selection_text")
             self.deselect_all_meshes(True)
             self.plotter.add_mesh(self.selection_mesh, color='purple', pickable=True, point_size=10, name='selection',
                                   reset_camera=False)
 
-    def add_meshes_to_input_and_plotter(self, mesh, idx_mesh, new_mesh=False, merged_mesh=False):
+    def add_meshes_to_input_and_plotter(self, mesh, idx_mesh, new_mesh=False, merged_mesh=False, reset_camera=False):
         if None in self.input_meshes:
             idx_mesh = self.input_meshes.index(None)
             self.input_meshes[idx_mesh] = mesh
@@ -2691,37 +2718,82 @@ class MyMainWindow(MainWindow):
             # find boundary_points of the new mesh
             boundary = mesh.extract_feature_edges(boundary_edges=True, non_manifold_edges=False,
                                                   manifold_edges=False, feature_edges=False)
+
+            boundary_vertices_idx = vtk_custom_widget.boundary_edges_id(mesh)
+            all_edges_idx = vtk_custom_widget.all_edges_id(mesh)
+
             boundary_points = boundary.points
 
             edges = mesh.extract_all_edges().lines.reshape((-1, 3))[:, 1:]
-
             boundary_edges = boundary.lines.reshape((-1, 3))[:, 1:]
+            # edge_dict = {}
 
-            edge_dict = {}
+            boundary_edges_source_mesh = []
+            boundary_edge_dict = {}
+            for edge in boundary_edges:
+                idx_1 = edge[0]
+                idx_2 = edge[1]
+                edge[0] = boundary_vertices_idx[idx_1]
+                edge[1] = boundary_vertices_idx[idx_2]
+                if edge[0] not in boundary_edge_dict:
+                    boundary_edge_dict[edge[0]] = {edge[1]}
+                else:
+                    boundary_edge_dict[edge[0]].update([edge[1]])
 
-            for edge_idx, edge in enumerate(boundary_edges):
-                edge_masked = boundary_points[edge]
-                if tuple(edge_masked[0].tolist()) not in edge_dict:
-                    edge_dict[tuple(edge_masked[0].tolist())] = {tuple(edge_masked[1].tolist())}
+                if edge[1] not in boundary_edge_dict:
+                    boundary_edge_dict[edge[1]] = {edge[0]}
                 else:
-                    edge_dict[tuple(edge_masked[0].tolist())].update([tuple(edge_masked[1].tolist())])
-                if tuple(edge_masked[1].tolist()) not in edge_dict:
-                    edge_dict[tuple(edge_masked[1].tolist())] = {tuple(edge_masked[0].tolist())}
-                else:
-                    edge_dict[tuple(edge_masked[1].tolist())].update([tuple(edge_masked[0].tolist())])
+                    boundary_edge_dict[edge[1]].update([edge[0]])
+
+                boundary_edges_source_mesh.append(edge)
+
+            # print(boundary_edge_dict)
+            # print(boundary_edges_source_mesh)
+
             boundary_edges_data = np.zeros(len(edges))
+            all_edges_source_mesh = []
             for edge_idx, edge in enumerate(edges):
-                edge_masked = mesh.points[edge]
-                if tuple(edge_masked[0].tolist()) in edge_dict:
-                    if tuple(edge_masked[1].tolist()) in edge_dict[tuple(edge_masked[0].tolist())]:
+                idx_1 = edge[0]
+                idx_2 = edge[1]
+                edge[0] = all_edges_idx[idx_1]
+                edge[1] = all_edges_idx[idx_2]
+                if edge[0] in boundary_edge_dict:
+                    if edge[1] in boundary_edge_dict[edge[0]]:
                         boundary_edges_data[edge_idx] = 1
-            vertex_dict = {}
+                all_edges_source_mesh.append(edge)
+
+            # print(boundary_edges_source_mesh)
+            # print(all_edges_source_mesh)
+
+            # for edge_idx, edge in enumerate(boundary_edges):
+            #     edge_masked = boundary_points[edge]
+            #     if tuple(edge_masked[0].tolist()) not in edge_dict:
+            #         edge_dict[tuple(edge_masked[0].tolist())] = {tuple(edge_masked[1].tolist())}
+            #     else:
+            #         edge_dict[tuple(edge_masked[0].tolist())].update([tuple(edge_masked[1].tolist())])
+            #     if tuple(edge_masked[1].tolist()) not in edge_dict:
+            #         edge_dict[tuple(edge_masked[1].tolist())] = {tuple(edge_masked[0].tolist())}
+            #     else:
+            #         edge_dict[tuple(edge_masked[1].tolist())].update([tuple(edge_masked[0].tolist())])
+
+            # boundary_edges_data = np.zeros(len(edges))
+            # for edge_idx, edge in enumerate(edges):
+            #     edge_masked = mesh.points[edge]
+            #     if tuple(edge_masked[0].tolist()) in edge_dict:
+            #         if tuple(edge_masked[1].tolist()) in edge_dict[tuple(edge_masked[0].tolist())]:
+            #             boundary_edges_data[edge_idx] = 1
+
             boundary_vertices = np.ones(mesh.n_points, dtype=int)
-            for point_idx, point in enumerate(boundary_points):
-                vertex_dict[tuple(point.tolist())] = point_idx
-            for vrtx_idx, vrtx in enumerate(mesh.points):
-                if tuple(vrtx.tolist()) not in vertex_dict:
+            for vrtx_idx in range(mesh.n_points):
+                if vrtx_idx not in boundary_vertices_idx:
                     boundary_vertices[vrtx_idx] = -1
+
+            # vertex_dict = {}
+            # for point_idx, point in enumerate(boundary_points):
+            #     vertex_dict[tuple(point.tolist())] = point_idx
+            # for vrtx_idx, vrtx in enumerate(mesh.points):
+            #     if tuple(vrtx.tolist()) not in vertex_dict:
+            #         boundary_vertices[vrtx_idx] = -1
 
             mesh.point_data['boundary_vertices'] = boundary_vertices
             mesh.field_data['boundary_edges_data'] = boundary_edges_data
@@ -2771,7 +2843,7 @@ class MyMainWindow(MainWindow):
 
         # add the mesh to the plotter
         self.plotter.add_mesh(mesh, color="green", show_edges=True, name=f"mesh_{idx_mesh}", pickable=False,
-                              reset_camera=False)
+                              reset_camera=reset_camera)
         self.plotter.add_point_labels([mesh.center_of_mass()], [f"mesh_{idx_mesh}"], name=f"labels_mesh_{idx_mesh}",
                                       reset_camera=False)
         x_pos = 10
@@ -2941,9 +3013,10 @@ class MyMainWindow(MainWindow):
 
             # self.merged_meshes_idx[idx_mesh] = len(self.merged_meshes_idx.keys())
 
-            msg = 'Recalculate boundary vertices? '
+            msg = 'Recalculate boundary ?'
             user_bool = easygui.ynbox(msg)
             if user_bool:
+
                 # recalculate boundary_points of the new mesh
                 merged_mesh = mesh_1.merge(mesh_2, inplace=False)
                 idx_mesh = len(self.input_meshes)  # index in self.input_meshes
@@ -3020,7 +3093,48 @@ class MyMainWindow(MainWindow):
 
                 merged_mesh.point_data['boundary_vertices'] = boundary_vertices
                 merged_mesh.point_data['boundary_layer_vertices'] = boundary_layer_vertices
+
+            # else:
+            #     if 'boundary_edges_data' in mesh_1.array_names and 'boundary_edges_data' in mesh_2.array_names:
+            #         edges_1 = mesh_1.extract_all_edges()
+            #         edges_2 = mesh_2.extract_all_edges()
+            #         edges_mesh_1 = edges_1.lines.reshape((-1, 3))[:, 1:]
+            #         edges_mesh_2 = edges_2.lines.reshape((-1, 3))[:, 1:]
+            #
+            #         alt_edges_idx_1 = vtk_custom_widget.all_edges_id(mesh_1)
+            #         alt_edges_idx_2 = vtk_custom_widget.all_edges_id(mesh_2)
+            #
+            #         print(edges_mesh_1)
+            #         print(alt_edges_idx_1)
+            #
+            #         alt_edges_source_mesh_1 = []
+            #         for edge_idx, edge in enumerate(edges_mesh_1):
+            #             idx_1 = edge[0]
+            #             idx_2 = edge[1]
+            #             edge[0] = alt_edges_idx_1[idx_1]
+            #             edge[1] = alt_edges_idx_1[idx_2]
+            #             alt_edges_source_mesh_1.append(edge)
+            #
+            #         alt_edges_source_mesh_2 = []
+            #         for edge_idx, edge in enumerate(edges_mesh_2):
+            #             idx_1 = edge[0]
+            #             idx_2 = edge[1]
+            #             edge[0] = alt_edges_idx_2[idx_1]
+            #             edge[1] = alt_edges_idx_2[idx_2]
+            #             alt_edges_source_mesh_2.append(edge)
+            #
+            #         mesh_1.point_data["idx_pre_merge"] = np.array([i for i in range(mesh_1.n_points)])
+            #         mesh_2.point_data["idx_pre_merge"] = np.array([i for i in range(mesh_2.n_points)])
+            #
+            #
+            #         boundary_edges_mesh_1 = edges_mesh_1[np.nonzero(mesh_1['boundary_edges_data'] == 1)]
+            #         boundary_edges_mesh_2 = edges_mesh_2[np.nonzero(mesh_2['boundary_edges_data'] == 1)]
+            #         boundary_points_mesh_1 = edges_1.points.reshape((-1, 3))
+            #         boundary_points_mesh_2 = edges_2.points.reshape((-1, 3))
+
             else:
+                msg = 'keep boundary edges?'
+                choice = easygui.indexbox(msg, choices=["All", "first mesh", "second mesh", "only shared edges"])
 
                 if 'boundary_layer_vertices' in mesh_1.array_names and 'boundary_layer_vertices' in mesh_2.array_names:
                     merged_mesh = mesh_1.merge(mesh_2, inplace=False)
@@ -3042,13 +3156,8 @@ class MyMainWindow(MainWindow):
                     edges_mesh_2 = edges_2.lines.reshape((-1, 3))[:, 1:]
                     boundary_edges_mesh_1 = edges_mesh_1[np.nonzero(mesh_1['boundary_edges_data'] == 1)]
                     boundary_edges_mesh_2 = edges_mesh_2[np.nonzero(mesh_2['boundary_edges_data'] == 1)]
-                    print(np.max(boundary_edges_mesh_1))
-                    print(np.max(boundary_edges_mesh_2))
                     boundary_points_mesh_1 = edges_1.points.reshape((-1, 3))
-                    print(len(boundary_points_mesh_1))
-
                     boundary_points_mesh_2 = edges_2.points.reshape((-1, 3))
-                    print(len(boundary_points_mesh_2))
 
                 else:
                     # extract boundary edges and points of mesh_1 and mesh_2
@@ -3068,6 +3177,16 @@ class MyMainWindow(MainWindow):
                 # extract all edges of merged mesh and concatenate boundary edges and points of mesh_1 and mesh_2
                 edges = merged_mesh.extract_all_edges().lines.reshape((-1, 3))[:, 1:]
 
+                alt_edges_idx = vtk_custom_widget.all_edges_id(merged_mesh)
+                alt_edges_source_mesh = []
+                for edge_idx, edge in enumerate(edges):
+                    idx_1 = edge[0]
+                    idx_2 = edge[1]
+                    edge[0] = alt_edges_idx[idx_1]
+                    edge[1] = alt_edges_idx[idx_2]
+                    alt_edges_source_mesh.append(edge)
+                alt_edges_source_mesh = np.array(alt_edges_source_mesh)
+
                 boundary_edges_conc = [[boundary_edges_mesh_1] + [boundary_edges_mesh_2]]
 
                 boundary_points_conc = [boundary_points_mesh_1] + [boundary_points_mesh_2]
@@ -3077,13 +3196,8 @@ class MyMainWindow(MainWindow):
                 # loop over the boundary edges of mesh_1 and mesh_2, mask the edges with the vertex position
                 # and create a dictionary with vertex position per edge
                 for mesh_idx, boundary_edges in enumerate(boundary_edges_conc[0]):
-                    print(boundary_edges)
                     for edge in boundary_edges:
-                        print(mesh_idx)
-                        print(edge)
-
                         edge_masked = boundary_points_conc[mesh_idx][edge]
-                        print(edge_masked)
                         if tuple(edge_masked[0].tolist()) not in edges_dict[mesh_idx]:
                             edges_dict[mesh_idx][tuple(edge_masked[0].tolist())] = {tuple(edge_masked[1].tolist())}
                         else:
@@ -3094,16 +3208,66 @@ class MyMainWindow(MainWindow):
                         else:
                             edges_dict[mesh_idx][tuple(edge_masked[1].tolist())].update(
                                 [tuple(edge_masked[0].tolist())])
-                print(edges_dict)
                 # loop over edges of the merged mesh and find edges where both meshes share a boundary edge
                 boundary_edges_data = np.zeros(len(edges))
-                for edge_idx, edge in enumerate(edges):
-                    edge_masked = merged_mesh.points[edge]
-                    if tuple(edge_masked[0].tolist()) in edges_dict[0] and tuple(edge_masked[0].tolist()) in edges_dict[
-                        1]:
-                        if tuple(edge_masked[1].tolist()) in edges_dict[0][tuple(edge_masked[0].tolist())] and \
-                                tuple(edge_masked[1].tolist()) in edges_dict[1][tuple(edge_masked[0].tolist())]:
-                            boundary_edges_data[edge_idx] = 1
+                # all boundary edges
+                if choice == 0:
+                    for edge_idx, edge in enumerate(alt_edges_source_mesh):
+                        edge_masked = merged_mesh.points[edge]
+                        if tuple(edge_masked[0].tolist()) in edges_dict[0] and tuple(edge_masked[0].tolist()) in \
+                                edges_dict[
+                                    1]:
+                            if tuple(edge_masked[1].tolist()) in edges_dict[0][tuple(edge_masked[0].tolist())] and \
+                                    tuple(edge_masked[1].tolist()) in edges_dict[1][tuple(edge_masked[0].tolist())]:
+                                boundary_edges_data[edge_idx] = 1
+
+                        if tuple(edge_masked[0].tolist()) in edges_dict[0]:
+                            if tuple(edge_masked[1].tolist()) in edges_dict[0][tuple(edge_masked[0].tolist())]:
+                                boundary_edges_data[edge_idx] = 1
+
+                        if tuple(edge_masked[0].tolist()) in edges_dict[1]:
+                            if tuple(edge_masked[1].tolist()) in edges_dict[1][tuple(edge_masked[0].tolist())]:
+                                boundary_edges_data[edge_idx] = 1
+
+                # only first mesh
+                if choice == 1:
+                    for edge_idx, edge in enumerate(alt_edges_source_mesh):
+                        edge_masked = merged_mesh.points[edge]
+                        if tuple(edge_masked[0].tolist()) in edges_dict[0] and tuple(edge_masked[0].tolist()) in \
+                                edges_dict[
+                                    1]:
+                            if tuple(edge_masked[1].tolist()) in edges_dict[0][tuple(edge_masked[0].tolist())] and \
+                                    tuple(edge_masked[1].tolist()) in edges_dict[1][tuple(edge_masked[0].tolist())]:
+                                boundary_edges_data[edge_idx] = 1
+
+                        if tuple(edge_masked[0].tolist()) in edges_dict[0]:
+                            if tuple(edge_masked[1].tolist()) in edges_dict[0][tuple(edge_masked[0].tolist())]:
+                                boundary_edges_data[edge_idx] = 1
+
+                # only second mesh
+                if choice == 2:
+                    for edge_idx, edge in enumerate(alt_edges_source_mesh):
+                        edge_masked = merged_mesh.points[edge]
+                        if tuple(edge_masked[0].tolist()) in edges_dict[0] and tuple(edge_masked[0].tolist()) in \
+                                edges_dict[
+                                    1]:
+                            if tuple(edge_masked[1].tolist()) in edges_dict[0][tuple(edge_masked[0].tolist())] and \
+                                    tuple(edge_masked[1].tolist()) in edges_dict[1][tuple(edge_masked[0].tolist())]:
+                                boundary_edges_data[edge_idx] = 1
+                        if tuple(edge_masked[0].tolist()) in edges_dict[1]:
+                            if tuple(edge_masked[1].tolist()) in edges_dict[1][tuple(edge_masked[0].tolist())]:
+                                boundary_edges_data[edge_idx] = 1
+
+                # only shared edges
+                if choice == 3:
+                    for edge_idx, edge in enumerate(alt_edges_source_mesh):
+                        edge_masked = merged_mesh.points[edge]
+                        if tuple(edge_masked[0].tolist()) in edges_dict[0] and tuple(edge_masked[0].tolist()) in \
+                                edges_dict[
+                                    1]:
+                            if tuple(edge_masked[1].tolist()) in edges_dict[0][tuple(edge_masked[0].tolist())] and \
+                                    tuple(edge_masked[1].tolist()) in edges_dict[1][tuple(edge_masked[0].tolist())]:
+                                boundary_edges_data[edge_idx] = 1
 
                 merged_mesh.field_data['boundary_edges_data'] = boundary_edges_data
 
@@ -3114,14 +3278,18 @@ class MyMainWindow(MainWindow):
     def pick_faces(self, check):
         if check:
             self.clear_selection(True)
-            self.plotter.enable_cell_picking(callback=self.faces_picker, through=False)
+            self.plotter.enable_cell_picking(callback=self.faces_picker, through=False, show_message=False)
+            self.plotter.add_text('clear selection', font_size=6, position=(670, 65), name="delete_faces_text")
         else:
+            self.plotter.add_text('select faces', font_size=6, position=(670, 65), name="delete_faces_text")
             self.selected_faces.clear()
             if 'face_selection' in self.plotter.renderer.actors:
                 self.plotter.remove_actor('face_selection')
-            self.plotter.enable_point_picking(self.point_to_selection, use_mesh=True, show_point=False)
+            self.plotter.enable_point_picking(self.point_to_selection, use_mesh=True, show_point=False,
+                                              show_message=False)
 
     def pick_edges(self, text):
+        print(text)
         edge_btn = self.edges_btn[text]
 
         if edge_btn.isChecked():
@@ -3155,7 +3323,7 @@ class MyMainWindow(MainWindow):
                                       render_lines_as_tubes=True, line_width=10)
 
                 vtk_custom_widget.enable_cell_picking(self.plotter, callback=self.edges_picker, through=False,
-                                                      show=False)
+                                                      show=False, show_message=False)
             else:
                 edge_btn.setChecked(False)
                 return
@@ -3173,7 +3341,7 @@ class MyMainWindow(MainWindow):
                                   name=f"mesh_{idx_mesh}", opacity=opacity, reset_camera=False)
 
             self.selection_mesh = pv.PolyData()
-            self.plotter.enable_point_picking(self.point_to_selection, use_mesh=True)
+            self.plotter.enable_point_picking(self.point_to_selection, use_mesh=True, show_message=False)
             self.plotter.remove_actor('selection')
 
             if self.mover is not None:
@@ -3294,14 +3462,14 @@ class MyMainWindow(MainWindow):
                 self.plotter.add_slider_widget(self.set_percent_decimation, rng=(0.0, 1.0))
                 self.button_widgets_utils['mesh_decimation_slider'] = len(self.plotter.slider_widgets) - 1
 
-                self.plotter.add_checkbox_button_widget(set_reduction_helper, position=(800, 10), color_on='orange',
+                self.plotter.add_checkbox_button_widget(set_reduction_helper, position=(1100, 10), color_on='orange',
                                                         color_off='grey')
-                self.plotter.add_text('set reduction ', font_size=6, position=(780, 60), name='set_reduction_button')
+                self.plotter.add_text('set reduction ', font_size=6, position=(1085, 65), name='set_reduction_button')
                 self.button_widgets_utils['mesh_decimation_reduction'] = len(self.plotter.button_widgets) - 1
 
-                self.plotter.add_checkbox_button_widget(self.abort_decimation, position=(900, 10), color_on='orange',
+                self.plotter.add_checkbox_button_widget(self.abort_decimation, position=(1200, 10), color_on='orange',
                                                         color_off='orange')
-                self.plotter.add_text('abort decimation', font_size=6, position=(880, 60),
+                self.plotter.add_text('abort decimation', font_size=6, position=(1180, 65),
                                       name='abort_decimation_button')
                 self.button_widgets_utils['mesh_abort_decimation'] = len(self.plotter.button_widgets) - 1
 
@@ -3360,7 +3528,7 @@ class MyMainWindow(MainWindow):
         # load the tempory file
         ms.load_new_mesh("temp_mesh.obj")
         # decimation with the passed reduction
-        ms.simplification_quadric_edge_collapse_decimation(targetperc=reduction_percent)
+        ms.simplification_quadric_edge_collapse_decimation(targetperc=reduction_percent, boundaryweight=5)
         # save the decimated mesh temporary
         ms.save_current_mesh("temp_mesh_2.obj")
         # read again with pyvista
@@ -3426,6 +3594,7 @@ class MyMainWindow(MainWindow):
                     extrema_points = mesh.points[extrema_points_idx]
                     self.plotter.add_points(extrema_points, pickable=True, name=f"constrained_mesh{idx_mesh}",
                                             reset_camera=False)
+                    self.constrained_meshes[idx_mesh] = pv.PolyData(extrema_points)
             else:
                 extrema = np.zeros(mesh.n_points)
                 points = mesh.points
@@ -3440,7 +3609,7 @@ class MyMainWindow(MainWindow):
                 vertex_vertex_dictionary = data_structure.vertex_vertex_dictionary(points, edges)
                 local_minima = []
                 local_maxima = []
-
+                # find extreme points in z-direction
                 for i, vertex in enumerate(points):
                     if not tuple(vertex) in boundary_vertices_set:
                         is_extrema = []
@@ -3452,7 +3621,9 @@ class MyMainWindow(MainWindow):
                             elif neighbor_z < vertex_z:
                                 is_extrema.append('Max')
                         is_extrema = np.array(is_extrema)
-                        if all(is_extrema == 'Min'):
+                        if len(is_extrema) == 0:
+                            pass
+                        elif all(is_extrema == 'Min'):
                             local_minima.append(i)
                         elif all(is_extrema == 'Max'):
                             local_maxima.append(i)
@@ -3604,6 +3775,10 @@ class MyMainWindow(MainWindow):
             temp_pysubdiv.data['deviation'] = self.input_meshes[mesh_idx]['deviation']
         except KeyError as k:
             print(k)
+        try:
+            temp_pysubdiv.data['creases'] = self.input_meshes[mesh_idx]['creases'].reshape((-1, 1))
+        except KeyError as k:
+            print(k)
 
         temp_pysubdiv.save_data(filename[:-4] + "Data")
 
@@ -3621,7 +3796,7 @@ class MyMainWindow(MainWindow):
             path_txt = [file for file in sorted(os.listdir(file_path[0])) if file.endswith(".pkl")]
 
             idx_mesh = len(self.input_meshes)
-            idx_mesh = self.add_meshes_to_input_and_plotter(mesh, idx_mesh)
+            idx_mesh = self.add_meshes_to_input_and_plotter(mesh, idx_mesh, reset_camera=True)
 
             msg = 'Load additional data for the file?'
             user_bool = easygui.ynbox(msg)
@@ -3665,6 +3840,10 @@ class MyMainWindow(MainWindow):
                     if 'deviation' in temp_mesh.data:
                         self.input_meshes[idx_mesh].point_data['deviation'] = temp_mesh.data[
                             'deviation']
+
+                    if 'creases' in temp_mesh.data:
+                        self.input_meshes[idx_mesh].add_field_data(temp_mesh.data[
+                                                                       'creases'], "creases")
 
                     # if 'non_manifold_vertices' in temp_mesh.data:
                     #     self.input_meshes[idx_mesh].cell_data['non_manifold_vertices'] = temp_mesh.data[
@@ -3781,37 +3960,49 @@ class MyMainWindow(MainWindow):
 
             offset += 50
 
-        self.plotter.add_checkbox_button_widget(self.triangulate_selection, color_on='purple', color_off='purple')
-        self.plotter.add_text('triangulation', font_size=6, position=(6, 60), name="triangulate_text")
+        self.plotter.add_checkbox_button_widget(self.triangulate_selection, color_on='purple', color_off='purple',
+                                                position=(20, 10))
+        self.plotter.add_text('triangulation', font_size=6, position=(14, 65), name="triangulate_text")
         self.button_widgets_utils['triangulation_button'] = len(self.plotter.button_widgets) - 1
 
-        self.plotter.add_checkbox_button_widget(self.selection_undo, position=(150, 10))
+        self.plotter.add_checkbox_button_widget(self.selection_undo, position=(190, 10), color_on="lightblue",
+                                                color_off="lightblue")
+
+        self.plotter.add_text('undo vertex ', font_size=6, position=(181, 65), name="undo_vertex")
+
         self.button_widgets_utils['polygon_selection_undo'] = len(self.plotter.button_widgets) - 1
 
         # button switch between selection and deletion
-        self.plotter.add_checkbox_button_widget(self.switch_picking_deleting, position=(200, 10), value=True)
-        self.plotter.add_text('select', font_size=6, position=(210, 60), name="selection_text")
+        self.plotter.add_checkbox_button_widget(self.switch_picking_deleting, position=(300, 10), value=True)
+        self.plotter.add_text('deselect vertices ', font_size=6, position=(285, 65), name="selection_text")
         self.button_widgets_utils['button_picking_deleting'] = len(self.plotter.button_widgets) - 1
 
-        self.plotter.add_checkbox_button_widget(self.deselect_all_meshes, position=(300, 10))
+        self.plotter.add_checkbox_button_widget(self.deselect_all_meshes, position=(430, 10),
+                                                color_on="red", color_off="red")
+        self.plotter.add_text('deselect all', font_size=6, position=(421, 65), name="deselect_all")
+
         self.button_widgets_utils['deselect_all_meshes'] = len(self.plotter.button_widgets) - 1
 
-        self.plotter.add_checkbox_button_widget(self.clear_selection, position=(400, 10))
+        self.plotter.add_checkbox_button_widget(self.clear_selection, position=(550, 10), color_on='green',
+                                                color_off='green')
+        self.plotter.add_text('clear selection', font_size=6, position=(533, 65), name="clear_selection")
+
         self.button_widgets_utils['clear_selection'] = len(self.plotter.button_widgets) - 1
 
-        self.plotter.add_checkbox_button_widget(self.merge_meshes, position=(500, 10), color_on='yellow',
+        self.plotter.add_checkbox_button_widget(self.merge_meshes, position=(800, 10), color_on='yellow',
                                                 color_off='yellow')
         self.button_widgets_utils['merge_meshes'] = len(self.plotter.button_widgets) - 1
+        self.plotter.add_text('merge meshes', font_size=6, position=(782, 65), name="merge_meshes")
 
-        self.plotter.add_checkbox_button_widget(self.pick_faces, position=(600, 10), color_on='purple',
+        self.plotter.add_checkbox_button_widget(self.pick_faces, position=(680, 10), color_on='purple',
                                                 color_off='grey')
-        self.plotter.add_text('select faces', font_size=6, position=(600, 60), name="delete_faces_text")
+        self.plotter.add_text('select faces', font_size=6, position=(670, 65), name="delete_faces_text")
         self.button_widgets_utils['delete_faces'] = len(self.plotter.button_widgets) - 1
 
         # Buttons + slider for mesh decimation
-        self.plotter.add_checkbox_button_widget(self.mesh_decimation, position=(700, 10), color_on='orange',
+        self.plotter.add_checkbox_button_widget(self.mesh_decimation, position=(990, 10), color_on='orange',
                                                 color_off='grey')
-        self.plotter.add_text('mesh decimation', font_size=6, position=(680, 60))
+        self.plotter.add_text('mesh decimation', font_size=6, position=(970, 65))
         self.button_widgets_utils['mesh_decimation'] = len(self.plotter.button_widgets) - 1
 
         # add button for moving selection
@@ -3854,7 +4045,7 @@ class MyMainWindow(MainWindow):
         # self.button_widgets_utils['show curvature'] = len(self.plotter.button_widgets) - 1
 
         self.plotter.enable_point_picking(self.point_to_selection, use_mesh=True, pickable_window=False,
-                                          show_point=False)
+                                          show_point=False, show_message=False)
         self.plotter.add_camera_orientation_widget()
         self.set_state(States.picking_selection)
         self.plotter.isometric_view_interactive()
@@ -3882,6 +4073,8 @@ class MyMainWindow(MainWindow):
             self.mover.widget_off()
 
     def subdivide(self):
+        if self._state == States.mesh_subdivision:
+            return
         self.deselect_all_meshes(True)
         self.clear_selection(True)
         self.set_state(States.mesh_subdivision)
@@ -3998,6 +4191,11 @@ class Subdivide(MainWindow):
         self.selected_edges = selected_edges
         self.iteration = 1
         self.transparency = 0.2
+        self.parent = parent
+        self.show_faces = True
+
+        self.quit = QAction("Quit", self)
+        self.quit.triggered.connect(self.close)
 
         self.cb = QComboBox(self)
         self.label = QLabel(self)
@@ -4026,6 +4224,16 @@ class Subdivide(MainWindow):
         self.iteration_input_field.setGeometry(120, 114, 50, 25)
         self.iteration_input_field.editingFinished.connect(self.change_subdiv_iterations)
 
+        self.dynamic_faces_button = QtWidgets.QRadioButton(self)
+        self.dynamic_faces_button.setGeometry(310, 164, 50, 25)
+        self.dynamic_faces_button.setChecked(True)
+        self.dynamic_faces_button.toggled.connect(lambda: self.visibility_changed(self.dynamic_faces_button))
+
+        self.radio_button_label = QLabel(self)
+        self.radio_button_label.setText("show \nstatic faces: ")
+        self.radio_button_label.move(200, 160)
+
+
         self.csv_input = QtWidgets.QDoubleSpinBox(self)
 
         # self.csv_input.setValidator(QDoubleValidator(0.0, 10, 2, notation=QDoubleValidator.StandardNotation))
@@ -4037,6 +4245,11 @@ class Subdivide(MainWindow):
         self.csv_label = QLabel(self)
         self.csv_label.setText("crease value: ")
         self.csv_label.move(10, 160)
+
+        self.accept_button = QPushButton(self)
+        self.accept_button.setText("Accept subdivsion")
+        self.accept_button.setGeometry(120, 204, 300, 25)
+        self.accept_button.clicked.connect(self.accept_subdiv)
 
         self.edge_selection_changed()
 
@@ -4054,6 +4267,22 @@ class Subdivide(MainWindow):
         if self.cb.count() == 1:
             self.selection_change(0)
 
+    def visibility_changed(self, b):
+        array_names = self.input_meshes[self.selected_mesh].array_names
+        if "dynamic_faces" in array_names and "dynamic_vertices" in array_names:
+            if b.isChecked():
+                self.show_faces = True
+                self.update_subdiv()
+            else:
+                self.show_faces = False
+                self.update_subdiv()
+        else:
+            b.setChecked(True)
+
+    def closeEvent(self, event):
+        self.exit_subdiv()
+        event.accept()
+
     def selection_change(self, i):
         if len(self.selected_meshes) > 0:
             self.selected_meshes.clear()
@@ -4063,7 +4292,11 @@ class Subdivide(MainWindow):
         vertices = mesh.points
         faces = mesh.faces.reshape((-1, 4))[:, 1:]
         self.pysub_mesh = PySubdiv.Mesh(vertices, faces)
-        if self.selected_mesh in self.input_meshes_data:
+
+        if "creases" in mesh.array_names:
+            self.pysub_mesh.set_crease(mesh["creases"])
+
+        elif self.selected_mesh in self.input_meshes_data:
             self.pysub_mesh.load_data(self.input_meshes_data[self.selected_mesh])
 
         self.control_points = mesh
@@ -4078,7 +4311,10 @@ class Subdivide(MainWindow):
 
     def value_change(self):
         self.transparency = self.trans_slider.value() / 10
+        if self.transparency == 0.0:
+            self.transparency = 0.01
         mesh = self.input_meshes[self.selected_mesh]
+
         self.plotter.add_mesh(mesh, color="red", show_edges=True, name=f"mesh_{self.selected_mesh}",
                               reset_camera=False, pickable=True, opacity=self.transparency)
 
@@ -4100,8 +4336,9 @@ class Subdivide(MainWindow):
             if retval == 4194304:
                 return
 
-        self.plotter.add_mesh(self.pysub_mesh.subdivide(self.iteration).model(), color="green", show_edges=True,
-                              name=f"mesh_subdiv{self.selected_mesh}", reset_camera=False, pickable=False)
+        # self.plotter.add_mesh(self.pysub_mesh.subdivide(self.iteration).model(), color="green", show_edges=True,
+        #                       name=f"mesh_subdiv{self.selected_mesh}", reset_camera=False, pickable=False)
+        self.update_subdiv()
 
     def set_crease_values(self):
 
@@ -4119,8 +4356,61 @@ class Subdivide(MainWindow):
             # faces = mesh.faces.reshape((-1, 4))[:, 1:]
             for vert_idx in selection_idx.keys():
                 self.pysub_mesh.vertices[vert_idx] = vertices[vert_idx]
-        self.plotter.add_mesh(self.pysub_mesh.subdivide(self.iteration).model(), color="green", show_edges=True,
-                              name=f"mesh_subdiv{self.selected_mesh}", reset_camera=False, pickable=False)
+
+        if not self.show_faces:
+            self.pysub_mesh.data["dynamic_faces"] = self.input_meshes[self.selected_mesh]["dynamic_faces"]
+            self.pysub_mesh.data["dynamic_vertices"] = self.input_meshes[self.selected_mesh]["dynamic_vertices"]
+
+            subdivided_mesh = self.pysub_mesh.subdivide(self.iteration)
+            model = subdivided_mesh.model()
+            model.cell_data["opacity"] = np.where(subdivided_mesh.data["dynamic_faces"] == "s", 0, 1)
+            self.plotter.add_mesh(model, scalars=subdivided_mesh.data["dynamic_faces"], opacity="opacity",
+                                  show_edges=True,
+                                  name=f"mesh_subdiv{self.selected_mesh}", reset_camera=False, pickable=False)
+
+        # if "dynamic_faces" in self.input_meshes[self.selected_mesh].array_names:
+        #     print("lel")
+        #     model.cell_arrays["opacity"] = np.where(subdivided_mesh.data["dynamic_faces"] == "s", 0, 1)
+        #     self.plotter.add_mesh(model, scalars=subdivided_mesh.data["dynamic_faces"], opacity="opacity", show_edges=True,
+        #                           name=f"mesh_subdiv{self.selected_mesh}", reset_camera=False, pickable=False)
+        else:
+            subdivided_mesh = self.pysub_mesh.subdivide(self.iteration)
+            model = subdivided_mesh.model()
+            self.plotter.add_mesh(model, color="green", show_edges=True,
+                                  name=f"mesh_subdiv{self.selected_mesh}", reset_camera=False, pickable=False)
+
+    def exit_subdiv(self):
+        mesh = self.input_meshes[self.selected_mesh]
+        self.plotter.remove_actor(f"control_points")
+        self.plotter.remove_actor(f"mesh_subdiv{self.selected_mesh}")
+        self.plotter.add_mesh(mesh, color="green", show_edges=True, name=f"mesh_{self.selected_mesh}",
+                              reset_camera=False, pickable=False)
+        self.selected_meshes.pop()
+        self.parent.clear_selection(True)
+        self.parent.edges_btn["Select Edges"].setChecked(False)
+
+        self.parent.selection_mesh = pv.PolyData()
+        self.plotter.enable_point_picking(self.parent.point_to_selection, use_mesh=True, show_message=False)
+        self.plotter.remove_actor('selection')
+
+        if self.parent.mover is not None:
+            self.parent.mover_btn['Move selection'].setChecked(False)
+            self.parent.mover.widget_off()
+
+        self.parent.set_state(States.picking_selection)
+
+    def accept_subdiv(self):
+        mesh = self.input_meshes[self.selected_mesh]
+        creases = self.pysub_mesh.creases
+        mesh.add_field_data(creases, "creases")
+        subdiv = self.pysub_mesh.subdivide(self.iteration)
+        creases_subdiv = subdiv.creases
+        subdiv_mesh = subdiv.model()
+        subdiv_mesh.add_field_data(creases_subdiv, "creases")
+        idx_mesh = len(self.parent.input_meshes)
+        self.parent.add_meshes_to_input_and_plotter(subdiv_mesh, idx_mesh, new_mesh=True)
+        # self.exit_subdiv()
+        self.close()
 
 
 class DefineVolumes(MainWindow):

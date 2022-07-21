@@ -215,7 +215,7 @@ class Structure(object):
 
         return edge_verts, idx_non_manifold_edges, idx_non_manifold_verts
 
-    def main(self):
+    def refine(self):
 
         old_vertex_count = int(len(self.data['vertices']))
 

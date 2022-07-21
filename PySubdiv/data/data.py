@@ -16,6 +16,9 @@ class data_dictionary(object):
     def __iter__(self):
         return iter(self.data)
 
+    def delete(self, key):
+        self.data.pop(key, None)
+
     def clear(self):
         self.data.clear()
 

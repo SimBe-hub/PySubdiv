@@ -1,3 +1,5 @@
+import copy
+
 import pyvista as pv
 import numpy as np
 import pyvista.core.pointset
@@ -26,7 +28,7 @@ def create_model(faces, vertices):
     return pv.PolyData(vertices, faces_points)
 
 
-def print_model(pysubdiv_mesh):
+def print_model(pysubdiv_mesh, return_plotter=False, colors=None):
     """
     Converts pysubdiv mesh to  pyvista.PolyData object and plots the object
 
@@ -39,16 +41,30 @@ def print_model(pysubdiv_mesh):
     pyvista.PolyData
         pyvista object
     """
-    pysubdiv_mesh.recalculate_normals()
-    model = create_model(pysubdiv_mesh.faces, pysubdiv_mesh.vertices)
+    print(colors)
+    #pysubdiv_mesh.recalculate_normals()
+    #model = create_model(pysubdiv_mesh.faces, pysubdiv_mesh.vertices)
+    model = pysubdiv_mesh.model()
     model['label'] = np.array([i for i in range(model.n_points)])
     p = pv.Plotter()
-    p.add_mesh(model, color='green', use_transparency=False, show_edges=True)
-    p.set_background("royalblue", top="aliceblue")
+    p.enable_depth_peeling()
+    if "dynamic_faces" in pysubdiv_mesh.data:
+        model.cell_arrays["opacity"] = np.where(pysubdiv_mesh.data["dynamic_faces"] == "s", 0, 1)
+        if colors is not None:
+            p.add_mesh(model, scalars=pysubdiv_mesh.data["dynamic_faces"], cmap=colors, show_edges=True,
+                       scalar_bar_args={"color" : "black"})
+        else:
+            p.add_mesh(model, scalars=pysubdiv_mesh.data["dynamic_faces"], use_transparency=False, show_edges=True,
+                       scalar_bar_args={"color": "black"})
+
+    else:
+        p.add_mesh(model, color='green', use_transparency=False, show_edges=True)
+    #p.set_background("royalblue", top="aliceblue")
+    p.set_background("white")
     p.isometric_view_interactive()
-    p.show_axes()
-    p.show_grid()
-    p.show_bounds(all_edges=True)
+    p.add_camera_orientation_widget()
+    p.show_grid(color="black")
+    #p.show_bounds(all_edges=True, color="black")
     factor = p.length * 0.05
 
     def show_normals(check):
@@ -82,15 +98,64 @@ def print_model(pysubdiv_mesh):
             p.remove_actor("vertex_index-points")
             p.remove_actor("vertex_index-labels")
 
+    def show_edge_index(check):
+        if check:
+            # find mid points of edges to plot the label at
+            edges_mid_point = []
+            for edge in pysubdiv_mesh.edges:
+                edges_mid_point.append((pysubdiv_mesh.vertices[edge[0]] + pysubdiv_mesh.vertices[edge[1]]) / 2)
+            edges_mid_point = np.array(edges_mid_point)
+            # prepare label array with edge index and crease sharpness value
+            edge_labels = []
+            for i in range(len(pysubdiv_mesh.edges)):
+                edge_labels.append(f"{i}: {pysubdiv_mesh.creases[i][0]}")
+            p.add_point_labels(edges_mid_point, edge_labels, name='edge_index')
+        else:
+            p.remove_actor("edge_index-points")
+            p.remove_actor("edge_index-labels")
+
+    def show_static_faces(check):
+        if check:
+            if colors is None:
+                p.add_mesh(model, scalars=pysubdiv_mesh.data["dynamic_faces"], opacity="opacity", show_edges=True,
+                           scalar_bar_args={"color" : "black"})
+            else:
+                scalars = np.where(pysubdiv_mesh.data["dynamic_faces"] == "s", 4, pysubdiv_mesh.data["dynamic_faces"])
+                scalars = scalars.astype(np.int)
+                print(scalars)
+                p.add_mesh(model, scalars=scalars, cmap=colors, opacity="opacity", show_edges=True,
+                           scalar_bar_args={"color": "black"})
+
+        else:
+            if colors is None:
+                p.add_mesh(model, scalars=pysubdiv_mesh.data["dynamic_faces"], use_transparency=False, show_edges=True,
+                           scalar_bar_args={"color" : "black"})
+            else:
+                p.add_mesh(model, scalars=pysubdiv_mesh.data["dynamic_faces"], use_transparency=False, show_edges=True,
+                           scalar_bar_args={"color": "black"}, cmap=colors)
+
+
+    if "dynamic_faces" in pysubdiv_mesh.data:
+        p.add_checkbox_button_widget(show_static_faces, position=(10, 300), color_on='orange', size=35)
+        p.add_text('hide static faces', position=(60, 303), font_size=14, color='black')
+
     p.add_checkbox_button_widget(show_vertex_normals, position=(10, 260), color_on='lightblue', size=35)
     p.add_text('show vertex normals', position=(60, 263), font_size=14, color='black')
     p.add_checkbox_button_widget(show_normals, position=(10, 220), color_on='lightblue', size=35)
     p.add_text('show face normals', position=(60, 223), font_size=14, color='black')
     p.add_checkbox_button_widget(show_vertex_index, position=(10, 180), color_on='green', size=35)
     p.add_text('show vertex index', position=(60, 183), font_size=14, color='black',
-               name='text_recalculate_normals')
-    p.show()
-    return model
+               name='vertex_index')
+    p.add_checkbox_button_widget(show_edge_index, position=(10, 140), color_on='green', size=35)
+    p.add_text('show edge index', position=(60, 143), font_size=14, color='black',
+               name='edge_index')
+
+    if return_plotter:
+        return p
+    else:
+
+        p.show()
+        return model
 
 
 def visualize_subdivision(mesh, iteration, additional_meshes=None):
@@ -101,8 +166,9 @@ def visualize_subdivision(mesh, iteration, additional_meshes=None):
     selection = []  # list to hold vertices forming edge
     edges_with_crease = {}  # dict to hold vertices forming edge where a crease is set
     selection_edge_idx = []  # list to hold edge idx
-    point_for_adding_vertex = [] # list to store point for adding
-    p.add_mesh(model_mesh, color='green', opacity=0.5, use_transparency=True, show_edges=True, name='control_cage')
+    point_for_adding_vertex = []  # list to store point for adding
+
+    p.add_mesh(model_mesh, color='green', opacity=0.5, use_transparency=True, show_edges=True, name='control_mesh')
     p.add_mesh(model_subdivided_mesh, color='green', use_transparency=False, show_edges=False, pickable=False,
                name='subdivided')
 
@@ -138,7 +204,7 @@ def visualize_subdivision(mesh, iteration, additional_meshes=None):
                 p.add_lines(model_mesh.points[mesh.edges[idx]], color='yellow',
                             width=(5 * csv) + 0.5, name=f"line{idx}")
         p.add_mesh(mesh.model(), color='green', opacity=0.5, use_transparency=True, show_edges=True,
-                   name='control_cage')
+                   name='control_mesh')
 
         p.add_mesh(mesh.subdivide(iteration).model(), color='green', use_transparency=False, show_edges=False,
                    pickable=False,
@@ -200,18 +266,17 @@ def visualize_subdivision(mesh, iteration, additional_meshes=None):
         start = click_position - 1000 * direction_from_camera  # start end for raycast
         end = click_position + 1000 * direction_from_camera
         point, ix = mesh.model().ray_trace(start, end, first_point=True)
-        if len(point) >0:
+        if len(point) > 0:
             point_for_adding_vertex.append(point)
             print(ix)
-            #print(point)
-
+            # print(point)
 
             print(mesh.faces)
             mesh.add_vertex(ix[0], point)
             print(mesh.faces)
             mesh_model = mesh.model()
             p.add_mesh(mesh_model, color='green', opacity=0.5, use_transparency=True, show_edges=True,
-                       name='control_cage')
+                       name='control_mesh')
 
             w = p.add_mesh(pv.Sphere(radius_start[0], center=point), color='red')
 
@@ -261,7 +326,7 @@ def visualize_subdivision(mesh, iteration, additional_meshes=None):
     p.isometric_view_interactive()
     p.add_camera_orientation_widget()
 
-    p.track_click_position(position_for_new_vertex, side='right')
+    #p.track_click_position(position_for_new_vertex, side='right')
 
     p.show_bounds(mesh=model_mesh, grid='front', location='outer', all_edges=True)
     p.show()
@@ -285,3 +350,84 @@ def visualize_distance(mesh, mesh_to_compare):
     p.show_grid()
     p.show_bounds(all_edges=True)
     p.show()
+
+
+def visualize_error(mesh, meshes_to_compare, control_mesh=None, return_plotter=False, point_size=1):
+    mesh_model = mesh.model()
+
+
+    dist = np.array(optimization.sdf_with_meshes(meshes_to_compare, mesh)[2])
+
+    #v = optimization.sdf_with_meshes(meshes_to_compare, mesh, return_vertices=True)
+
+    vertices = mesh.vertices
+    mesh_model['deviation'] = dist
+
+    mesh_deleted = copy.copy(mesh_model)
+    mesh_deleted.remove_cells(np.nonzero(mesh.data["dynamic_faces"] == "s"), inplace=True)
+
+    p = pv.Plotter()
+    if control_mesh is not None:
+        p.add_points(control_mesh.model(), render_points_as_spheres=True, color="green", point_size=point_size)
+
+    p.add_mesh(mesh_model, scalars="deviation", show_edges=True, cmap="seismic", name="mesh", scalar_bar_args={"color" : "black"})
+    p.set_background("white")
+    p.isometric_view_interactive()
+    p.add_camera_orientation_widget()
+
+    dynamic_vertices_idx = np.nonzero(mesh.data["dynamic_vertices"] != "s")
+
+    #model.cell_arrays["opacity"] = np.where(pysubdiv_mesh.data["dynamic_faces"] == "s", 0, 1)
+
+    def show_static_faces(check):
+        if check:
+            p.add_mesh(mesh_model, scalars="deviation", show_edges=True, cmap="seismic", name="mesh",
+                       scalar_bar_args={"color" : "black"})
+        else:
+            p.add_mesh(mesh_deleted, scalars="deviation", show_edges=True, cmap="seismic", name="mesh",
+                       scalar_bar_args={"color" : "black"})
+
+    p.add_checkbox_button_widget(show_static_faces, position=(10, 300), color_on='orange', size=35)
+    #p.add_text('hide static faces', position=(60, 303), font_size=14, color='black')
+    #p.show_grid(color="black", font_size=25)
+    p.show_bounds(color="black", font_size=25, location="outer")
+
+
+    # print(f"total deviation of the meshes: "
+    #       f"{np.linalg.norm((v - vertices), ord=2)}")
+    # print(f"mean deviation of the meshes: {np.mean(v - vertices)}")
+    # #print(f"standard deviation: {np.}")
+    # print(f"maximal deviation of the meshes: {np.max((v - vertices))}")
+    # print(f"Number of points: {len(mesh.vertices)}")
+    # print("----------------------------------------------------------")
+    # print("Error only for dynamic vertices")
+    # print(f"total deviation of the meshes: "
+    #       f"{np.linalg.norm((v[dynamic_vertices_idx] - vertices[dynamic_vertices_idx]), ord=2)}")
+    # print(f"mean deviation of the meshes: {np.mean(v[dynamic_vertices_idx] - vertices[dynamic_vertices_idx])}")
+    # print(f"maximal deviation of the meshes: {np.max((v[dynamic_vertices_idx] - vertices[dynamic_vertices_idx]))}")
+    # print(f"Number of points: {len(mesh.vertices[dynamic_vertices_idx])}")
+
+    print(f"total deviation of the meshes: {np.sum(dist)}")
+    print(f"mean deviation of the meshes: {np.mean(dist)}")
+    print(f"standard deviation: {np.std(dist)}")
+    print(f"maximal deviation of the meshes: {np.max(dist)}")
+    print(f" 25% percentile: {np.quantile(dist, 0.25)}")
+    print(f" 75% percentile: {np.quantile(dist, 0.75)}")
+    print(f" median: {np.median(dist)}")
+
+    print(f"Number of points: {len(mesh.vertices)}")
+    print("----------------------------------------------------------")
+    print("Error only for dynamic vertices")
+    print(f"total deviation of the meshes: {np.sum(dist[dynamic_vertices_idx])}")
+    print(f"mean deviation of the meshes: {np.mean(dist[dynamic_vertices_idx])}")
+    print(f"standard deviation: {np.std(dist[dynamic_vertices_idx])}")
+    print(f"maximal deviation of the meshes: {np.max((dist[dynamic_vertices_idx]))}")
+    print(f"25% percentile: {np.quantile(dist[dynamic_vertices_idx], 0.25)}")
+    print(f"75% percentile: {np.quantile(dist[dynamic_vertices_idx], 0.75)}")
+    print(f"median: {np.median(dist[dynamic_vertices_idx])}")
+    print(f"Number of points: {len(mesh.vertices[dynamic_vertices_idx])}")
+
+    if return_plotter:
+        return p, mesh_model, mesh_deleted
+    else:
+        p.show()

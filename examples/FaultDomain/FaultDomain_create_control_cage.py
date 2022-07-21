@@ -7,9 +7,9 @@ original_meshes = [files.read('meshes/gemp_mesh_0_scaled.obj'),
                    files.read('meshes/gemp_mesh_2_cut_1.obj'), files.read('meshes/gemp_mesh_2_cut_2.obj'),
                    files.read('meshes/gemp_mesh_3_cut_1.obj'), files.read('meshes/gemp_mesh_3_cut_2.obj'),
                    files.read('meshes/gemp_mesh_4_cut_1.obj'), files.read('meshes/gemp_mesh_4_cut_2.obj')]
-# Second step load the module control_cage: it will take our list of original meshes as the first parameter, then
+# Second step load the module control_mesh: it will take our list of original meshes as the first parameter, then
 # we can pass additional keyword arguments to let the algorithm compute some critical vertex positions for us.
-# The function control_cage will return a mesh, so we need to store a reference in a variable:
+# The function control_mesh will return a mesh, so we need to store a reference in a variable:
 # find_vertices will find vertices lying on the boundary of the input meshes and on the corner and displays them in
 # the viewer. calc_intersection tries to find vertices where two planes intersect, as the input meshes don't have
 # an intersection it is here set to False. add_boundary_box will calculate the four corner vertices of the meshes'
