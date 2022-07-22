@@ -49,9 +49,14 @@ mesh_loaded_from_obj.visualize_mesh()
 # The file ending will be added automatically if forgotten.
 mesh.save_mesh('Meshes/CoarseChannel')
 ```
+
 # References
 
 Moulaeifard, S. M., Wellmann, F., Bernard, S., de la Varga, M.,  & Boommes, D. Subdivide and Conquer: Adapting Non-Manifold Subdivision Surfaces Method to Represent and Approximate Complex Geological and Reservoir Structures.
+
+# License
+
+The PySubdiv is under GNU license. Please cite the code by ![image](https://user-images.githubusercontent.com/61519597/180358012-fb8155d5-d896-44c2-bff6-0c77af0591bb.png)
 
 
 # Developers
