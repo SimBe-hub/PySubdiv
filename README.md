@@ -49,14 +49,15 @@ mesh_loaded_from_obj.visualize_mesh()
 # The file ending will be added automatically if forgotten.
 mesh.save_mesh('Meshes/CoarseChannel')
 ```
-# Installation
+# References
 
+Moulaeifard, S. M., Wellmann, F., Bernard, S., de la Varga, M.,  & Boommes, D. Subdivide and Conquer: Adapting Non-Manifold Subdivision Surfaces Method to Represent and Approximate Complex Geological and Reservoir Structures.
 
 
 # Developers
 
 Full stack developer : Simon Bernard (SimBe-hub)
 
-Project manager and backend developer : s.Mohammad Moulaeifard (MohammadCGRE)
+Project manager and backend developer : Mohammad Moulaeifard (MohammadCGRE)
 
 Project supervisor from RWTH Aachen university: Prof. Florian Wellmann
