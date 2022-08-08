@@ -67,7 +67,7 @@ DOI = {10.5194/egusphere-2022-685}
 
 # License
 
-The PySubdiv is under GNU license. Please cite the code by ![image](https://user-images.githubusercontent.com/61519597/180358012-fb8155d5-d896-44c2-bff6-0c77af0591bb.png) https://zenodo.org/record/6878051#.YuGVynZByUk
+The PySubdiv is under GNU license. https://zenodo.org/record/6878051#.YuGVynZByUk
 
 
 # Developers
