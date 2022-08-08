@@ -54,17 +54,7 @@ mesh.save_mesh('Meshes/CoarseChannel')
 
 Please cite this article when you want to use this code.
 
-
-#Article{egusphere-2022-685
-#AUTHOR = {Moulaeifard, M. and Bernard, S. and Wellmann, F.}
-#TITLE = {PySubdiv: open-source geological modelling and reconstruction by non-manifold subdivision surfaces}
-#JOURNAL = {EGUsphere}
-#VOLUME = {2022}
-#YEAR = {2022}
-#PAGES = {1--21}
-#URL = {https://egusphere.copernicus.org/preprints/egusphere-2022-685/}
-#DOI = {10.5194/egusphere-2022-685}
-#}
+Moulaeifard, M., Bernard, S., and Wellmann, F.: PySubdiv: open-source geological modelling and reconstruction by non-manifold subdivision surfaces, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2022-685, 2022.
 
 # License
 
