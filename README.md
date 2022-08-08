@@ -52,7 +52,18 @@ mesh.save_mesh('Meshes/CoarseChannel')
 
 # References
 
-Moulaeifard, S. M., Wellmann, F., Bernard, S., de la Varga, M.,  & Boommes, D. Subdivide and Conquer: Adapting Non-Manifold Subdivision Surfaces Method to Represent and Approximate Complex Geological and Reservoir Structures.
+Please cite this article when you want to use this code.
+
+@Article{egusphere-2022-685,
+AUTHOR = {Moulaeifard, M. and Bernard, S. and Wellmann, F.},
+TITLE = {PySubdiv: open-source geological modelling and reconstruction by non-manifold subdivision surfaces},
+JOURNAL = {EGUsphere},
+VOLUME = {2022},
+YEAR = {2022},
+PAGES = {1--21},
+URL = {https://egusphere.copernicus.org/preprints/egusphere-2022-685/},
+DOI = {10.5194/egusphere-2022-685}
+}
 
 # License
 
