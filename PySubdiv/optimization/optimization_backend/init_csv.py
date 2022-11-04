@@ -1,7 +1,7 @@
 import numpy as np
 from PySubdiv.backend import calculation
 from PySubdiv.data import data_structure
-from PySubdiv import PySubdiv
+from PySubdiv import PySubdiv_api
 from PySubdiv.backend import optimization
 
 
@@ -263,7 +263,7 @@ def sharp_creases_from_boundaries(mesh, original_mesh, surface_to_fit):
             boundary_vertex = []
             for vertex_idx in edge:  # loop over vertices of the edge
                 edge_boolean_mask = []  # list to store boundary edges of the original mesh
-                temp_mesh = PySubdiv.Mesh(vertices=[mesh.vertices[vertex_idx]])
+                temp_mesh = PySubdiv_api.Mesh(vertices=[mesh.vertices[vertex_idx]])
                 temp_mesh.data['dynamic_vertices'] = mesh.data['dynamic_vertices'][vertex_idx]
                 mesh_id, vert_id = optimization.sdf_with_meshes(
                     np.array(original_mesh)[surface_to_fit].tolist(), temp_mesh)[:2]

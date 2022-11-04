@@ -1,5 +1,5 @@
 import pyvista as pv
-from PySubdiv import PySubdiv
+from PySubdiv import PySubdiv_api
 from PySubdiv.backend import utils
 import pickle
 
@@ -30,11 +30,11 @@ def read(filename):
     if mesh_type == 'quadrilaterals':
         vertices = file_merged.points  # extract vertices array
         faces = file_merged.faces.reshape(-1, 5)[:, 1:]  # reshaping the PyVista.PolyData faces array
-        return PySubdiv.Mesh(vertices, faces[:int(len(faces) / 2)])  # returning the PySubdiv mesh object
+        return PySubdiv_api.Mesh(vertices, faces[:int(len(faces) / 2)])  # returning the PySubdiv mesh object
     elif mesh_type == 'triangles':
         vertices = file_merged.points  # extract vertices array
         faces = file_merged.faces.reshape(-1, 4)[:, 1:]  # reshaping the PyVista.PolyData faces array
-        return PySubdiv.Mesh(vertices, faces[:int(len(faces) / 2)])  # returning the PySubdiv mesh object
+        return PySubdiv_api.Mesh(vertices, faces[:int(len(faces) / 2)])  # returning the PySubdiv mesh object
 
     else:
         raise ValueError("Imported mesh features none quadrilaterals faces. "

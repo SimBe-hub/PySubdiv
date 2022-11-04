@@ -1,30 +1,30 @@
 import numpy as np
 from scipy.spatial import KDTree
-from PySubdiv import PySubdiv
-from quad_mesh_simplify import simplify_mesh
+from PySubdiv import PySubdiv_api
+# from quad_mesh_simplify import simplify_mesh
 
 
-def decimate_mesh(mesh, nr_vertices):
-    """
-    Decimate the mesh using Using Quadric Error Metrics (http://mgarland.org/files/papers/quadrics.pdf)
-    --------------
-    mesh : PySubdiv mesh
+# def decimate_mesh(mesh, nr_vertices):
+#     """
+#     Decimate the mesh using Using Quadric Error Metrics (http://mgarland.org/files/papers/quadrics.pdf)
+#     --------------
+#     mesh : PySubdiv mesh
 
-    nr_vertices: int
-        Number of vertices after decimation
+#     nr_vertices: int
+#         Number of vertices after decimation
 
-    Returns
-    --------------
+#     Returns
+#     --------------
 
-    decimated_mesh : PySubdiv mesh
-        Decimated PySubdiv mesh
+#     decimated_mesh : PySubdiv mesh
+#         Decimated PySubdiv mesh
 
-    """
-    old_vertices = np.array(mesh.vertices)
-    old_faces = np.array(mesh.faces, dtype=np.uint32)
-    new_vertices, new_faces = simplify_mesh(old_vertices, old_faces, nr_vertices)
-    decimated_mesh = PySubdiv.Mesh(vertices=new_vertices, faces=new_faces)
-    return decimated_mesh
+#     """
+#     old_vertices = np.array(mesh.vertices)
+#     old_faces = np.array(mesh.faces, dtype=np.uint32)
+#     new_vertices, new_faces = simplify_mesh(old_vertices, old_faces, nr_vertices)
+#     decimated_mesh = PySubdiv_api.Mesh(vertices=new_vertices, faces=new_faces)
+#     return decimated_mesh
 
 
 def build_tree(mesh):
