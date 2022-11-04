@@ -5,7 +5,7 @@ import pyvista as pv
 import numpy as np
 from PySubdiv.backend import calculation
 from PySubdiv.backend import optimization
-from PySubdiv import PySubdiv_api
+from PySubdiv import PySubdiv
 from PySubdiv.create_control_cage import vtk_custom_widget
 import enum
 import copy
@@ -507,7 +507,7 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
                 index_max_occurrence = np.argmax(counts)
                 dynamic_vertices[vertex] = str(dynamic_vertices_dict[vertex][index_max_occurrence])
 
-    control_cage = PySubdiv_api.Mesh(vertices_position, control_cage_faces_reshaped)
+    control_cage = PySubdiv.Mesh(vertices_position, control_cage_faces_reshaped)
     if use_dynamic_faces:
         control_cage.data['fitting_method'] = 'dynamic_faces'
     else:
@@ -550,9 +550,9 @@ class ControlMesh:
         if isinstance(input_meshes, list):
             # check if meshes are PySubdiv.Mesh or PyVistaPolydata
             for idx, mesh in enumerate(input_meshes):
-                if isinstance(mesh, (PySubdiv_api.Mesh, pyvista.core.pointset.PolyData)):
+                if isinstance(mesh, (PySubdiv.Mesh, pyvista.core.pointset.PolyData)):
                     # check which type, if PySubdiv.Mesh convert to PyVista.PolyData and append
-                    if isinstance(mesh, PySubdiv_api.Mesh):
+                    if isinstance(mesh, PySubdiv.Mesh):
                         list_poly_data.append(mesh.model().clean())
                     # if not append directly
                     else:
@@ -562,10 +562,10 @@ class ControlMesh:
                                     f"Types should be PySubdiv.Mesh or Pyvista.PolyData")
         # check correct type of passed single mesh
         else:
-            if isinstance(input_meshes, (PySubdiv_api.Mesh, pyvista.core.pointset.PolyData)):
-                if isinstance(input_meshes, (PySubdiv_api.Mesh, pyvista.core.pointset.PolyData)):
+            if isinstance(input_meshes, (PySubdiv.Mesh, pyvista.core.pointset.PolyData)):
+                if isinstance(input_meshes, (PySubdiv.Mesh, pyvista.core.pointset.PolyData)):
                     # check which type, if PySubdiv.Mesh convert to PyVista.PolyData and append
-                    if isinstance(input_meshes, PySubdiv_api.Mesh):
+                    if isinstance(input_meshes, PySubdiv.Mesh):
                         list_poly_data.append(input_meshes.model().clean())
                     # if not append directly
                     else:
@@ -2246,9 +2246,9 @@ class PySubdivGUI(MainWindow):
         if isinstance(input_meshes, list):
             # check if meshes are PySubdiv.Mesh or PyVistaPolydata
             for idx, mesh in enumerate(input_meshes):
-                if isinstance(mesh, (PySubdiv_api.Mesh, pyvista.core.pointset.PolyData)):
+                if isinstance(mesh, (PySubdiv.Mesh, pyvista.core.pointset.PolyData)):
                     # check which type, if PySubdiv.Mesh convert to PyVista.PolyData and append
-                    if isinstance(mesh, PySubdiv_api.Mesh):
+                    if isinstance(mesh, PySubdiv.Mesh):
                         list_poly_data.append(mesh.model().clean())
                     # if not append directly
                     else:
@@ -2258,10 +2258,10 @@ class PySubdivGUI(MainWindow):
                                     f"Types should be PySubdiv.Mesh or Pyvista.PolyData")
         # check correct type of passed single mesh
         else:
-            if isinstance(input_meshes, (PySubdiv_api.Mesh, pyvista.core.pointset.PolyData)):
-                if isinstance(input_meshes, (PySubdiv_api.Mesh, pyvista.core.pointset.PolyData)):
+            if isinstance(input_meshes, (PySubdiv.Mesh, pyvista.core.pointset.PolyData)):
+                if isinstance(input_meshes, (PySubdiv.Mesh, pyvista.core.pointset.PolyData)):
                     # check which type, if PySubdiv.Mesh convert to PyVista.PolyData and append
-                    if isinstance(input_meshes, PySubdiv_api.Mesh):
+                    if isinstance(input_meshes, PySubdiv.Mesh):
                         list_poly_data.append(input_meshes.model().clean())
                     # if not append directly
                     else:
@@ -4298,7 +4298,7 @@ class Subdivide(MainWindow):
         mesh = self.input_meshes[self.selected_mesh]
         vertices = mesh.points
         faces = mesh.faces.reshape((-1, 4))[:, 1:]
-        self.pysub_mesh = PySubdiv_api.Mesh(vertices, faces)
+        self.pysub_mesh = PySubdiv.Mesh(vertices, faces)
 
         if "creases" in mesh.array_names:
             self.pysub_mesh.set_crease(mesh["creases"])

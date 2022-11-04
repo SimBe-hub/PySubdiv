@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial import KDTree
-from PySubdiv import PySubdiv_api
+from PySubdiv import PySubdiv
 # from quad_mesh_simplify import simplify_mesh
 
 

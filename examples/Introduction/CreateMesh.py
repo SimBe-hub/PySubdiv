@@ -1,9 +1,10 @@
 from PySubdiv import PySubdiv
 from PySubdiv.data import files
-
+# from PySubdiv.PySubdiv_api import *
 # Create a simple Mesh by passing vertices and faces
 # Create empty object or pass vertices and faces directly
 mesh = PySubdiv.Mesh()
+
 
 # vertices do have the shape (n,3), we can pass a list or numpy array
 # where n is the number of vertices
