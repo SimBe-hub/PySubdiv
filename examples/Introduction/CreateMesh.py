@@ -1,9 +1,13 @@
-from PySubdiv import PySubdiv
+import PySubdiv as psd
 from PySubdiv.data import files
-# from PySubdiv.PySubdiv_api import *
+
+import os
+absolute_path = os.path.dirname(__file__)
+
+
 # Create a simple Mesh by passing vertices and faces
 # Create empty object or pass vertices and faces directly
-mesh = PySubdiv.Mesh()
+mesh = psd.Mesh()
 
 
 # vertices do have the shape (n,3), we can pass a list or numpy array
@@ -32,10 +36,15 @@ mesh.visualize_mesh()
 
 # As it is quite tedious to set vertices and faces manually we simply can load and also save meshes from and to obj file
 # load mesh by passing the file path as string
-mesh_loaded_from_obj = files.read('Meshes/CoarseChannel.obj')
+
+
+relative_path = "Meshes/CoarseChannel.obj"
+full_path = os.path.join(absolute_path, relative_path)
+mesh_loaded_from_obj = files.read(full_path)
+
 # lets have a look:
 mesh_loaded_from_obj.visualize_mesh()
 # Yes indeed it is the same mesh
 # saving the mesh to obj file by passing a permitted file path, here I'm just overwriting.
 # The file ending will be added automatically if forgotten.
-mesh.save_mesh('Meshes/CoarseChannel')
+mesh.save_mesh(full_path)
