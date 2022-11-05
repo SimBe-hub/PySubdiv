@@ -9,29 +9,30 @@ The PySubdiv library is a python-based open-source package that can apply non-ma
 
 Tested on Ubuntu 22.04.1 
 
-Clone the repository from source (We are currently working with a pip installation)
+1. Clone the repository from source (We are currently working with a pip installation)
 ```console
 git clone https://github.com/SimBe-hub/PySubdiv.git
 ```
 
-Install the packages and dependencies
+2. Install the packages and dependencies
 ```console
+cd PySubdiv
 python3 setup.py install
 ```
 for developers
 ```console
 python3 setup.py develop
 ```
- **Important**
- install `easygui` from apt, NOT pip
+3. **Important：**
+install `easygui` from apt, NOT pip
 
- ```console
-sudo apt-get install python3-easygui
+```console
+apt-get install python3-easygui
 ```
 
 Test if the installation is successful
 
- ```console
+```console
 python3 examples/Introduction/CreateMesh.py
 ```
 
