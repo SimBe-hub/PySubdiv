@@ -1,13 +1,20 @@
 from PySubdiv.data import files
 from PySubdiv.create_control_cage import control_cage
 
+import sys
+print(sys.path)
+
+import os
+path = os.getcwd()
+print('pwd:',path)
+
 # load the original mesh exported from gempy and visualize
-anticlineOriginal = files.read("meshes/anticline_joined.obj")
-anticlineOriginal.visualize_mesh()
+# anticlineOriginal = files.read(path+"/examples/Anticlines/meshes/anticline_joined.obj")
+# anticlineOriginal.visualize_mesh()
 # for creating the control cage we will separate the original mesh into two parts. We can create a list and store
 # the two objects there.
 
-anticlineOriginalParts = [files.read("meshes/anticline_1.obj"), files.read("meshes/anticline_2.obj")]
+anticlineOriginalParts = [files.read(path+"/examples/Anticlines/meshes/anticline_1.obj"), files.read(path+"/examples/Anticlines/meshes/anticline_2.obj")]
 
 # let's create our control cage:
 # The function takes our list of original meshes as the first parameter, then

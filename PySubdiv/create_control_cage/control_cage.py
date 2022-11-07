@@ -63,7 +63,7 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
         label_meshes = pv.PolyData(points_for_labels)
         label_meshes['label'] = ['mesh_' + str(i) for i in range(len(mesh))]
         p.add_point_labels(label_meshes, "label", point_size=20, font_size=36, tolerance=0.01,
-                           show_points=True, name='label_mesh')
+                           show_points=True, name='label_mesh') # label layer mesh
     else:
         original_model = [mesh.model()]
         mesh = [mesh]
@@ -185,9 +185,13 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
         else:
             append_vertex_point_cloud(p_cloud_complete, point)
             append_vertex_point_cloud(p_cloud, point)
+        
+        # Visualize the picked point
+        p.add_points(point, render_points_as_spheres = True,point_size=10.0)
 
     def activate_vertex_picking(check):
         if not check:
+            # Disable mode
             p.remove_actor('disableButton')
             p.add_text('enable vertices', position=(50, 10), font_size=10, color='black', name='enableButton')
             p.remove_actor(labels)
@@ -198,6 +202,7 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
             p.add_point_labels(label_meshes, "label", point_size=20, font_size=36, tolerance=0.01,
                                show_points=True, name='label_mesh')
         else:
+            # Enable mode
             p.remove_actor('enableButton')
             p.add_text('disable vertices', position=(50, 10), font_size=10, color='black', name='disableButton')
 
@@ -217,8 +222,8 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
 
             points.append(p.add_mesh(p_cloud, point_size=20, scalars='used_points',
                                      cmap=['white', 'black'], show_scalar_bar=False, pickable=False))
-            labels.append(p.add_point_labels(p_cloud, "label", point_size=20, font_size=36, tolerance=0.01,
-                                             show_points=False))
+            labels.append(p.add_point_labels(p_cloud, "label", point_size=10, font_size=36, tolerance=0.01,
+                                             show_points=True,render_points_as_spheres = True))
 
             p.add_checkbox_button_widget(select_vertices, position=(300, 10), size=35, color_on='green',
                                          color_off='green')
@@ -448,16 +453,17 @@ def create_control_cage(mesh, find_vertices=False, calc_intersection=False, add_
 
     p.enable_point_picking(add_point_from_picking, show_message=False)
 
+    # Button Invisible
     p.add_checkbox_button_widget(make_mesh_invisible, position=(10, 130), color_on='yellow',
                                  color_off='yellow', size=35)
     p.add_text('make mesh \n invisible', position=(10, 85), font_size=10, color='black')
+
+    # Button Visible
     p.add_checkbox_button_widget(make_mesh_visible, position=(10, 230), color_on='orange',
                                  color_off='orange', size=35)
-
     p.add_text('make mesh \n visible', position=(10, 185), font_size=10, color='black')
 
     p.add_checkbox_button_widget(activate_vertex_picking, position=(10, 10), size=35)
-
     p.isometric_view_interactive()
     text = p.add_text('Press button to select control vertices', position='lower_edge', name='textbox')
     p.set_background('royalblue', top='aliceblue')
@@ -2291,6 +2297,7 @@ class PySubdivGUI(MainWindow):
             self.plotter.add_point_labels([self.input_meshes[idx_mesh].center_of_mass()], [f"mesh_{idx_mesh}"],
                                           name=f"labels_mesh_{idx_mesh}", reset_camera=False)
             self.invisible_meshes.remove(idx_mesh)
+            # TODO: Make associated points and labels invisible
 
     def select_mesh(self, idx_mesh=None):
         button = self.select_button_dict[idx_mesh]

@@ -5,16 +5,53 @@ Open-source python package for non-manifold subdivison surfaces algorithm
 # Overview
 The PySubdiv library is a python-based open-source package that can apply non-manifold subdivision surfaces algorithm (Loop) on triangluar meshes with considering unique semi-sharp creases value for each edge. The implementation of semi-sharp creases in the algorithm allows to model of different varieties of structures with sharp edges. Fitting of smooth subdivision surfaces to the input dense meshes for reconstruction is implemented in this python package.
 
+# Installation
+
+Tested on Ubuntu 22.04.1 
+
+1. Clone the repository from source (We are currently working with a pip installation)
+```console
+git clone https://github.com/SimBe-hub/PySubdiv.git
+```
+
+2. Install the packages and dependencies
+```console
+cd PySubdiv
+python3 setup.py install
+```
+for developers
+```console
+python3 setup.py develop
+```
+3. **Important：**
+install `easygui` from apt, NOT pip
+
+```console
+apt-get install python3-easygui
+```
+
+Test if the installation is successful
+
+```console
+python3 examples/Introduction/CreateMesh.py
+```
+
 
 # Quick Start
 
+
+
+
 ```python
-from pysubdiv.main import main
-from pysubdiv.main.data import files
+import PySubdiv as psd
+from PySubdiv.data import files
+
+import os
+absolute_path = os.path.dirname(__file__)
 
 # Create a simple Mesh by passing vertices and faces
 # Create empty object or pass vertices and faces directly
-mesh = main.Mesh()
+mesh = psd.Mesh()
 
 # vertices do have the shape (n,3), we can pass a list or numpy array
 # where n is the number of vertices
@@ -42,12 +79,16 @@ mesh.visualize_mesh()
 
 # As it is quite tedious to set vertices and faces manually we simply can load and also save meshes from and to obj file
 # load mesh by passing the file path as string
-mesh_loaded_from_obj = files.read('Meshes/CoarseChannel.obj')
+relative_path = "Meshes/CoarseChannel.obj"
+full_path = os.path.join(absolute_path, relative_path)
+mesh_loaded_from_obj = files.read(full_path)
+
 # lets have a look:
 mesh_loaded_from_obj.visualize_mesh()
+# Yes indeed it is the same mesh
 # saving the mesh to obj file by passing a permitted file path, here I'm just overwriting.
 # The file ending will be added automatically if forgotten.
-mesh.save_mesh('Meshes/CoarseChannel')
+mesh.save_mesh(full_path)
 ```
 
 # References
