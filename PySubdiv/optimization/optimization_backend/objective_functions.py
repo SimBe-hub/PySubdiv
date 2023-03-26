@@ -87,6 +87,9 @@ def objective_h(h, mesh, v, z, lambda_z, a_z, variable_edges, iterations=1, simp
     #h_round = h[i].T  # transpose the provided crease values to fit the needed shape
     h_round = h.T
     mesh_calc = copy.deepcopy(mesh)  # copy the control cage
+    print(h)
+    print(variable_edges)
+    print(h_round)
     mesh_calc.set_crease(h_round, variable_edges)  # set crease values to the copied mesh
     subdivided_mesh = mesh_calc.subdivide(iterations)  # subdivide the mesh one time
     if simple_error:
@@ -104,6 +107,61 @@ def objective_h(h, mesh, v, z, lambda_z, a_z, variable_edges, iterations=1, simp
     #loss.append(losses.sum())
 
     return losses.sum()
+
+
+def objective_h_swarm(h, mesh, v, z, lambda_z, a_z, variable_edges, iterations=1, simple_error=True):
+    """
+    Objective function to minimize the distance between the control points p on the control cage (provided mesh) and
+    vertices on the original mesh (v) regarding the crease values h, control points p are fixed.
+
+    Parameters
+    --------------
+    h : [n] float range 0.0 - 1.0
+        array of crease values which are used during the subdivision Provided by the minimizer.
+    mesh : PySubdiv mesh object
+        control cage on which the subdivision is performed. Vertices position are updated by p.
+    v : [n,3] float
+        vertices of the original mesh on which distances to p are calculated and minimized.
+    z: constrain for the optimization
+        z = v-mp, z = 0 in an ideal optimization.
+    lambda_z: [n] float
+        lagrangian multiplier, scalar.
+    a_z: float
+        positive number. In the objective function its meaning can be compared to spring constant.
+    variable_edges: [n] int
+        indices of edges which should be changed during minimization
+    iterations : int
+        iterations of subdivision performed during optimization.
+
+    Returns
+    --------------
+    loss : [n], float
+        n one loss for each member of the swarm
+        sum of each individual distance v[i] - p[i] which is minimized by the swarm optimizer
+    """
+    loss = []  # list to store the loss for each member of the swarm
+    # for each member of the swarm a subdivision has to be performed. Each with different crease values
+    for i in range(len(h)):
+        h_round = h[i].T  # transpose the provided crease values to fit the needed shape
+        mesh_calc = copy.deepcopy(mesh)  # copy the control cage
+
+        mesh_calc.set_crease(h_round, variable_edges)  # set crease values to the copied mesh
+        subdivided_mesh = mesh_calc.subdivide(iterations)  # subdivide the mesh one time
+        if simple_error:
+            mp = subdivided_mesh.data['vertices'][:len(mesh.vertices)]  # mp vertices of the mesh after subdivision position only depends on cv
+        else:
+            mp = subdivided_mesh.data['vertices']
+        diff_v_mp = v - mp  # v-mp: vector between vertices of the original mesh and the control cage
+        dot_product = []  # list to store the dot product
+        # iterate over each scalar and calculate the dot product (first part of objective function)
+        for j in range(len(lambda_z)):
+            dot_product.append(np.dot(lambda_z[j], (z - diff_v_mp)[j]))
+        # calculate losses for each vertex pair p and v as distance to the vectors
+        losses = dot_product + a_z / 2 * np.linalg.norm(z - diff_v_mp) ** 2
+        # sum up the losses and return the loss which should be minimized for each member of the swarm
+        loss.append(losses.sum())
+
+    return loss
 
 
 def objective_z(mesh, v, lambda_z, a_z, lambda_e, iterations=1, simple_error=True):
@@ -140,6 +198,7 @@ def objective_z(mesh, v, lambda_z, a_z, lambda_e, iterations=1, simple_error=Tru
     else:
         mp = subdivided_mesh.data['vertices']
     diff_v_mp = v - mp  # vector between v[i] and mp[i]
+
     res = 1 - lambda_e / a_z * np.linalg.norm(diff_v_mp - lambda_z / a_z, axis=1)  # closed form result of z
     z = np.where(res < 0, 0, res)  # if res is smaller than take zero otherwise res
     z = z[:, np.newaxis] * (diff_v_mp - lambda_z / a_z)  # final result for z[i]
