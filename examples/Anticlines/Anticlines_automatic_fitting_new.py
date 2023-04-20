@@ -28,42 +28,42 @@ original_meshes = [files.read("meshes/anticline_1_prepared.obj"), files.read("me
 # The boundaries for the control points is the bounding box of the control cage.
 # a_z and lambda_e coefficients used in the cost functions should be positive.
 
+# optimizer = variational_minimazation.MeshOptimizer(anticlineControlCage, original_meshes,
+#                                     meshes_to_fit=None, use_mesh_data=True,
+#                                     iterations_subdivision=1, variable_edges='automatic',
+#                                     a_z=25)
+
+# # Perform the optimization:
+# # Set the number of iterations for the optimization with number_iterations, epsilon_0 is the convergence tolerance.
+# # The iteration of the swam can be set with iterations_swarm and it's particles with nr_particles.
+# # The parameters of the swarm can be set with c1 (cognitive parameter), c2 (social parameter), w (inertia parameter)
+
+# optimizer.optimize(number_iteration=10, epsilon_0=1e-5, iterations_swarm=100, nr_particles=15, c1=0.5, c2=0.3,
+#                    w=0.9)
+
+# # Get the optimized control cage (position of control points and crease sharpness values)
+# anticlineControlCageOptimized = optimizer.control_mesh
+# subdivided_mesh = optimizer.subdivided_mesh
+# subdivided_mesh.visualize_mesh()
+
+
+# # We can see that the algorithm cannot get a good fit, as it cannot differentiate edges lying on the planes
+# # from edges on the boundaries. This happens because the vertices on the end of the edges both lies on the boundary and
+# # the algorithm will constrain these edges the same way as the edges on the boundary. We can circumvent this by refining
+# # the mesh before.
+# # anticlineControlCageOptimized.visualize_mesh_interactive(2, original_meshes)
+
+
+# anticlineControlCage = files.read("ControlCage/anticlineControlCage.obj")
+# anticlineControlCage.load_data("ControlCage/anticlineControlCageData")
+# anticlineControlCage = anticlineControlCage.simple_subdivision(1)
+# anticlineControlCage.visualize_mesh()
+
 optimizer = variational_minimazation.MeshOptimizer(anticlineControlCage, original_meshes,
                                     meshes_to_fit=None, use_mesh_data=True,
                                     iterations_subdivision=1, variable_edges='automatic',
                                     a_z=25)
-
-# Perform the optimization:
-# Set the number of iterations for the optimization with number_iterations, epsilon_0 is the convergence tolerance.
-# The iteration of the swam can be set with iterations_swarm and it's particles with nr_particles.
-# The parameters of the swarm can be set with c1 (cognitive parameter), c2 (social parameter), w (inertia parameter)
-
-optimizer.optimize(number_iteration=10, epsilon_0=1e-5, iterations_swarm=100, nr_particles=15, c1=0.5, c2=0.3,
-                   w=0.9)
-
-# Get the optimized control cage (position of control points and crease sharpness values)
-anticlineControlCageOptimized = optimizer.control_mesh
-subdivided_mesh = optimizer.subdivided_mesh
-subdivided_mesh.visualize_mesh()
-
-
-# We can see that the algorithm cannot get a good fit, as it cannot differentiate edges lying on the planes
-# from edges on the boundaries. This happens because the vertices on the end of the edges both lies on the boundary and
-# the algorithm will constrain these edges the same way as the edges on the boundary. We can circumvent this by refining
-# the mesh before.
-# anticlineControlCageOptimized.visualize_mesh_interactive(2, original_meshes)
-
-
-anticlineControlCage = files.read("ControlCage/anticlineControlCage.obj")
-anticlineControlCage.load_data("ControlCage/anticlineControlCageData")
-anticlineControlCage = anticlineControlCage.simple_subdivision(1)
-anticlineControlCage.visualize_mesh()
-
-optimizer = variational_minimazation.MeshOptimizer(anticlineControlCage, original_meshes,
-                                    meshes_to_fit=None, use_mesh_data=True,
-                                    iterations_subdivision=1, variable_edges='automatic',
-                                    a_z=25)
-optimizer.optimize(number_iteration=2, epsilon_0=1e-5, iterations_swarm=500, nr_particles=15, c1=0.5, c2=0.3,
+optimizer.optimize(number_iteration=10, epsilon_0=1e-5, iterations_swarm=500, nr_particles=15, c1=0.5, c2=0.3,
                    w=0.9)
 anticlineControlCageOptimized = optimizer.control_mesh
 anticlineControlCageOptimized.visualize_mesh_interactive(2, original_meshes)
