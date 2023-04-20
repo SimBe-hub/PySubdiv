@@ -13,7 +13,7 @@ anticlineControlCage.visualize_mesh()
 
 # create list of input/original meshes
 # Caution: Order inside the list should be the same as during the creation of the control cage
-original_meshes = [files.read("meshes/anticline_1.obj"), files.read("meshes/anticline_2.obj")]
+original_meshes = [files.read("meshes/anticline_1_prepared.obj"), files.read("meshes/anticline_2_prepared.obj")]
 
 # initialize the optimizer:
 # first argument is the control cage to be optimized. Position of vertices as well as crease sharpness values are
