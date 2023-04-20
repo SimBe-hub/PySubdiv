@@ -5,10 +5,10 @@ import pyvista as pv
 # automatic fitting of the control cage to an input mesh with a variational minimization approach after Wu et. al. 2017
 # [http://dx.doi.org/10.1007/s41095-017-0088-2]
 
-# import the mesh from obj and the data
-anticlineControlCage = files.read("ControlCage/anticlineControlCage.obj")
-anticlineControlCage.load_data("ControlCage/anticlineControlCageData")
-anticlineControlCage.visualize_mesh()
+# # import the mesh from obj and the data
+# anticlineControlCage = files.read("ControlCage/anticlineControlCage.obj")
+# anticlineControlCage.load_data("ControlCage/anticlineControlCageData")
+# anticlineControlCage.visualize_mesh()
 
 
 # create list of input/original meshes
@@ -54,8 +54,8 @@ original_meshes = [files.read("meshes/anticline_1_prepared.obj"), files.read("me
 # # anticlineControlCageOptimized.visualize_mesh_interactive(2, original_meshes)
 
 
-# anticlineControlCage = files.read("ControlCage/anticlineControlCage.obj")
-# anticlineControlCage.load_data("ControlCage/anticlineControlCageData")
+anticlineControlCage = files.read("meshes/anticlineControlCage.obj")
+anticlineControlCage.load_data("ControlCage/anticlineControlCageData")
 # anticlineControlCage = anticlineControlCage.simple_subdivision(1)
 # anticlineControlCage.visualize_mesh()
 
