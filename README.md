@@ -95,7 +95,9 @@ mesh.save_mesh(full_path)
 
 Please cite this article when you want to use this code.
 
-Moulaeifard, M., Bernard, S., and Wellmann, F.: PySubdiv: open-source geological modelling and reconstruction by non-manifold subdivision surfaces, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2022-685, 2022.
+1) Moulaeifard M, Wellmann F, Bernard S, de la Varga M, Bommes D. Subdivide and Conquer: Adapting Non-Manifold Subdivision Surfaces to Surface-Based Representation and Reconstruction of Complex Geological Structures. Mathematical Geosciences. 2023 Jan;55(1):81-111.
+
+2) Moulaeifard, M., Bernard, S., and Wellmann, F.: PySubdiv: open-source geological modelling and reconstruction by non-manifold subdivision surfaces, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2022-685, 2022.
 
 # License
 
