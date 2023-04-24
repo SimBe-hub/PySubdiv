@@ -93,7 +93,7 @@ mesh.save_mesh(full_path)
 
 # References
 
-Please cite this article when you want to use this code.
+If you find our work useful in your research, please cite our work:
 
 1) Moulaeifard M, Wellmann F, Bernard S, de la Varga M, Bommes D. Subdivide and Conquer: Adapting Non-Manifold Subdivision Surfaces to Surface-Based Representation and Reconstruction of Complex Geological Structures. Mathematical Geosciences. 2023 Jan;55(1):81-111.
 
