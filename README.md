@@ -7,7 +7,7 @@ The PySubdiv library is a python-based open-source package that can apply non-ma
 
 # Installation
 
-Currently the software can work well on Linux (without conda enviroment). Based on the user reports you may face errors if you want to use Mac OS or Windows, mostly becasue of the problems of PyQt with these framworks.
+Currently the software can work well on Linux (without conda enviroment). Based on the user reports you may face some errors if you are using Mac OS or Windows, mostly becasue of the problems of PyQt with these framworks.
 
 # Method 1) 
 
@@ -45,7 +45,7 @@ python3 examples/Introduction/CreateMesh.py
 
 usign ```pip install PySubdiv```
 
-this method may not work depend on your system.
+This method may not work, depend on your system.
 
 
 
