@@ -43,7 +43,7 @@ python3 examples/Introduction/CreateMesh.py
 
 # Method 2)
 
-usign pip install PySubdiv
+usign ```pip install PySubdiv```
 
 this method may not work depend on your system.
 
